@@ -9,14 +9,23 @@ class Scanner:
         self.symbol_table_txt.close()
         self.lexical_errors_txt = open('lexical_errors.txt', 'w+')
         self.lexical_errors_txt.close()
+        self.line_counter = 1
 
     def get_lookahead(self, i, chars):
+        if i >= len(chars):
+            return None
+        # todo check if its ok
         return chars[i + 1]
 
-    def get_next_token(self, chars, i, line_counter):
+    def get_next_token(self, chars, i):
         state = 1
         while True:
+            if i >= len(chars):
+                return 'FILE_ENDED', None, None
+            # todo handle errors!!!!
             char = chars[i]
+            if char == '\n':
+                self.line_counter += 1
             if state == 1:
                 if char.isdigit():
                     state = 2
@@ -30,13 +39,14 @@ class Scanner:
                     if char == '=' and self.get_lookahead(i, chars) == '=':
                         return 'SYMBOL', '==', i + 2
                     elif char == '/' and self.get_lookahead(i, chars) == '*':
+                        i += 2
+                        comment = ''
                         state = 11
                     else:
                         return 'SYMBOL', char, i + 1
                 elif char in self.whitespaces:
                     return 'WHITESPACE', char, i + 1
                 else:
-                    state = -1
                     return 'ERROR', char, i + 1
             elif state == 2:
                 if char.isdigit():
@@ -52,15 +62,24 @@ class Scanner:
                     i += 1
                 else:
                     return self.get_token(word), word, i
+            elif state == 11:
+                if char == '*' and self.get_lookahead(i, chars) == '/':
+                    i += 2
+                    return 'COMMENT', comment, i
+                else:
+                    i += 1
+                    comment += char
 
-        return token, lexeme, new_i
-
-    def scanner_loop(self, line, line_counter):
+    def scanner_loop(self, lines):
         i = 0
-        while i < len(line):
-            token, new_i = self.get_next_token(line, i, line_counter)
+        while i < len(lines):
+            token, lexeme, new_i = self.get_next_token(lines, i)
+            if token != 'WHITESPACE':
+                print(token, lexeme, self.line_counter)
+            # todo manage tokens and files
+            if token == 'FILE_ENDED':
+                break
             i = new_i
-        pass
 
     def get_token(self, word):
         if word in self.keywords:
@@ -71,15 +90,6 @@ class Scanner:
 
 scanner = Scanner()
 with open('input.txt') as f:
-    line_counter = 0
-    result = ''.join(f.readlines())
-    for i in range(len(result)):
-        print(result[i] == '\r\f\v')
-    # while True:
-    #     line_counter += 1
-    #     line = f.readline()
-    #     if not line:
-    #         break
-    #     # scanner.scanner_loop(line, line_counter)
-    #     print(line_counter, ':  ', line)
+    lines = ''.join(f.readlines())
+    scanner.scanner_loop(lines)
 f.close()
