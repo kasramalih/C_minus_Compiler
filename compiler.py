@@ -51,10 +51,14 @@ class Scanner:
                 elif char in self.symbols:
                     if char == '=' and self.get_lookahead(i, chars) == '=':
                         return 'SYMBOL', '==', i + 2
-                    elif char == '/' and self.get_lookahead(i, chars) == '*':
-                        i += 2
-                        comment = '/*'
-                        state = 11
+                    elif char == '/':
+                        if self.get_lookahead(i, chars) == '*':
+                            i += 2
+                            comment = '/*'
+                            state = 11
+                        else:
+                            self.add_error('Invalid input', char)
+                            i += 1
                     elif char == '*' and self.get_lookahead(i, chars) == '/':
                         self.add_error('Unmatched comment', '*/')
                         i += 2
