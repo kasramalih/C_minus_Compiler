@@ -10,7 +10,7 @@ class Scanner:
 
     def write_to_files(self):
         tokens_txt = open('tokens.txt', 'w+')
-        tokens_txt.write('\n'.join([f"{line_no}.\t{' '.join(value)}" for line_no, value in self.tokens.items()]).join(['\n']))
+        tokens_txt.write('\n'.join([f"{line_no}.\t{' '.join(value)}" for line_no, value in self.tokens.items()]) + '\n')
         tokens_txt.close()
 
         symbol_table_txt = open('symbol_table.txt', 'w+')
@@ -48,13 +48,21 @@ class Scanner:
                     state = 4
                     word = char
                     look_ahead = self.get_lookahead(i, chars)
-                    if look_ahead  in self.symbols or look_ahead in self.whitespaces:
+                    if look_ahead in self.symbols or look_ahead in self.whitespaces:
                         self.add_symbol(word)
                         return self.get_token(word), word, i+1
                     i += 1
                 elif char in self.symbols:
-                    if char == '=' and self.get_lookahead(i, chars) == '=':
-                        return 'SYMBOL', '==', i + 2
+                    if char == '=':
+                        look_ahead = self.get_lookahead(i, chars)
+                        if look_ahead == '=':
+                            return 'SYMBOL', '==', i + 2
+                        valid_chars = look_ahead.isalpha() or look_ahead.isdigit() or look_ahead in self.whitespaces or look_ahead in self.symbols
+                        if valid_chars:
+                            return 'SYMBOL', char, i + 1
+                        else:
+                            self.add_error('Invalid input', char+look_ahead)
+                            i += 2
                     elif char == '/':
                         if self.get_lookahead(i, chars) == '*':
                             i += 2
@@ -63,9 +71,18 @@ class Scanner:
                         else:
                             self.add_error('Invalid input', char)
                             i += 1
-                    elif char == '*' and self.get_lookahead(i, chars) == '/':
-                        self.add_error('Unmatched comment', '*/')
-                        i += 2
+                    elif char == '*':
+                        look_ahead = self.get_lookahead(i, chars)
+                        if look_ahead == '/':
+                            self.add_error('Unmatched comment', '*/')
+                            i += 2
+                        else:
+                            valid_chars = look_ahead.isalpha() or look_ahead.isdigit() or look_ahead in self.whitespaces
+                            if valid_chars:
+                                return 'SYMBOL', char, i+1
+                            else:
+                                self.add_error('Invalid input', char + look_ahead)
+                                i += 2
                     else:
                         return 'SYMBOL', char, i + 1
                 elif char in self.whitespaces:
@@ -142,5 +159,6 @@ class Scanner:
 scanner = Scanner()
 with open('input.txt') as f:
     lines = ''.join(f.readlines())
+    lines += ' '
     scanner.scanner_loop(lines)
 f.close()
