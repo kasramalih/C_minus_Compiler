@@ -11,11 +11,11 @@ class Scanner:
 
     def write_to_files(self):
         tokens_txt = open('tokens.txt', 'w+')
-        tokens_txt.write('\n'.join([f"{line_no}.\t{' '.join(value)}" for line_no, value in self.tokens.items()]) + '\n')
+        tokens_txt.write('\n'.join([f"{line_no}.\t{' '.join(value)} " for line_no, value in self.tokens.items()]) + '\n')
         tokens_txt.close()
 
         symbol_table_txt = open('symbol_table.txt', 'w+')
-        symbol_table_txt.write('\n'.join([f'{i + 1}.\t{s}' for i, s in enumerate(self.symbol_table)]))
+        symbol_table_txt.write('\n'.join([f'{i + 1}.\t{s}' for i, s in enumerate(self.symbol_table)]) + '\n')
         symbol_table_txt.close()
 
         lexical_errors_txt = open('lexical_errors.txt', 'w+')
@@ -23,7 +23,7 @@ class Scanner:
             lexical_errors_txt.write('There is no lexical error.')
         else:
             lexical_errors_txt.write(
-                '\n'.join([f"{line_no}.\t{' '.join(value)}" for line_no, value in self.errors.items()]))
+                '\n'.join([f"{line_no}.\t{' '.join(value)} " for line_no, value in self.errors.items()]) + '\n')
         lexical_errors_txt.close()
 
     def get_lookahead(self, i, chars):
@@ -59,8 +59,7 @@ class Scanner:
                         look_ahead = self.get_lookahead(i, chars)
                         if look_ahead == '=':
                             return 'SYMBOL', '==', i + 2
-                        valid_chars = look_ahead.isalpha() or look_ahead.isdigit() or look_ahead in self.whitespaces or look_ahead in self.symbols
-                        if valid_chars:
+                        elif self.is_char_valid(look_ahead):
                             return 'SYMBOL', char, i + 1
                         else:
                             self.add_error('Invalid input', char + look_ahead)
@@ -72,7 +71,7 @@ class Scanner:
                             comment = '/*'
                             state = 11
                             self.open_comment_line = self.line_counter
-                        elif look_ahead.isalpha() or look_ahead.isdigit() or look_ahead in self.whitespaces or look_ahead in self.symbols:
+                        elif self.is_char_valid(look_ahead):
                             self.add_error('Invalid input', char)
                             i += 1
                         else:
@@ -83,13 +82,11 @@ class Scanner:
                         if look_ahead == '/':
                             self.add_error('Unmatched comment', '*/')
                             i += 2
+                        elif self.is_char_valid(look_ahead):
+                            return 'SYMBOL', char, i + 1
                         else:
-                            valid_chars = look_ahead.isalpha() or look_ahead.isdigit() or look_ahead in self.whitespaces  # talk
-                            if valid_chars:
-                                return 'SYMBOL', char, i + 1
-                            else:
-                                self.add_error('Invalid input', char + look_ahead)
-                                i += 2
+                            self.add_error('Invalid input', char + look_ahead)
+                            i += 2
                     else:
                         return 'SYMBOL', char, i + 1
                 elif char in self.whitespaces:
@@ -126,6 +123,9 @@ class Scanner:
                 else:
                     i += 1
                     comment += char
+
+    def is_char_valid(self, look_ahead):
+        return look_ahead.isalpha() or look_ahead.isdigit() or look_ahead in self.whitespaces or look_ahead in self.symbols
 
     def add_symbol(self, symbol):
         if symbol not in self.symbol_table:
