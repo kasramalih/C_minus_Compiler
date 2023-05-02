@@ -1,3 +1,6 @@
+from anytree import Node, RenderTree
+
+
 class Scanner:
     def __init__(self):
         self.whitespaces = {'\n', '\r', '\t', '\v', '\f', ' '}
@@ -11,7 +14,8 @@ class Scanner:
 
     def write_to_files(self):
         tokens_txt = open('tokens.txt', 'w+')
-        tokens_txt.write('\n'.join([f"{line_no}.\t{' '.join(value)} " for line_no, value in self.tokens.items()]) + '\n')
+        tokens_txt.write(
+            '\n'.join([f"{line_no}.\t{' '.join(value)} " for line_no, value in self.tokens.items()]) + '\n')
         tokens_txt.close()
 
         symbol_table_txt = open('symbol_table.txt', 'w+')
@@ -37,7 +41,7 @@ class Scanner:
             if i >= len(chars):
                 if state == 11:
                     self.add_error('Unclosed comment', comment, self.open_comment_line)
-                return 'FILE_ENDED', None, None
+                return '$', None, None
             char = chars[i]
             if char == '\n':
                 self.line_counter += 1
@@ -94,7 +98,7 @@ class Scanner:
                 else:
                     self.add_error('Invalid input', char)
                     i += 1
-            elif state == 2:  # TODO need to check the correct error for sth like 23$$ i.e multiple invalid characters
+            elif state == 2:
                 if char.isdigit():
                     num = num + char
                     i += 1
@@ -151,9 +155,9 @@ class Scanner:
         i = 0
         while i < len(lines):
             token, lexeme, new_i = self.get_next_token(lines, i)
-            if token != 'WHITESPACE' and token != 'COMMENT' and token != 'FILE_ENDED':
+            if token != 'WHITESPACE' and token != 'COMMENT' and token != '$':
                 self.add_token(token, lexeme)
-            if token == 'FILE_ENDED':
+            if token == '$':
                 break
             i = new_i
         self.write_to_files()
@@ -165,9 +169,18 @@ class Scanner:
             return 'ID'
 
 
-scanner = Scanner()
+class Parser:
+    def __init__(self):
+        self.scanner = Scanner()
+        pass
+
+    def start_parser(self):
+        token, lexeme, next_i = self.scanner.get_next_token(lines, 0)
+
+
+# scanner = Scanner()
 with open('input.txt') as f:
     lines = ''.join(f.readlines())
     lines += ' '
-    scanner.scanner_loop(lines)
+    # scanner.scanner_loop(lines)
 f.close()
