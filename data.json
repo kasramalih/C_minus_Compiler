@@ -594,30 +594,30 @@
         "Arg-list-prime": [")"]
     },
     "productions": {
-        "Program" : ["Declaration-list"],
-        "Declaration-list" : ["Declaration", "Declaration-list", "EPSILON"],
-        "Declaration" : ["Declaration-initial", "Declaration-prime"],
-        "Declaration-initial" : ["Type-specifier", "ID"],
-        "Declaration-prime" : ["Fun-declaration-prime", "Var-declaration-prime"],
-6. Var-declaration-prime -> ; | [ NUM ] ;
-7. Fun-declaration-prime -> ( Params ) Compound-stmt
-8. Type-specifier -> int | void
-9. Params -> int ID Param-prime Param-list | void
-10. Param-list -> , Param Param-list | EPSILON
-11. Param -> Declaration-initial Param-prime
-12. Param-prime -> [ ] | EPSILON
-13. Compound-stmt -> { Declaration-list Statement-list }
-14. Statement-list -> Statement Statement-list | EPSILON
-15. Statement -> Expression-stmt | Compound-stmt | Selection-stmt | Iteration-stmt | Return-stmt
-16. Expression-stmt -> Expression ; | break ; | ;
-17. Selection-stmt -> if ( Expression ) Statement else Statement
-18. Iteration-stmt -> repeat Statement until ( Expression )
-19. Return-stmt -> return Return-stmt-prime
-20. Return-stmt-prime -> ; | Expression ;
-21. Expression -> Simple-expression-zegond | ID B
-22. B -> = Expression | [ Expression ] H | Simple-expression-prime
-23. H -> = Expression | G D C
-24. Simple-expression-zegond -> Additive-expression-zegond C
+        "Program" : [["Declaration-list"]],
+        "Declaration-list" : [["Declaration", "Declaration-list"], ["EPSILON"]],
+        "Declaration" : [["Declaration-initial", "Declaration-prime"]],
+        "Declaration-initial" : [["Type-specifier", "ID"]],
+        "Declaration-prime" : [["Fun-declaration-prime"], ["Var-declaration-prime"]],
+        "Var-declaration-prime" :  [";", ["[", "NUM", "]", ";"]],
+        "Fun-declaration-prime" : [["(", "Params", ")", "Compound-stmt"]],
+        "Type-specifier" : [["int"], ["void"]],
+        "Params" : [["int", "ID", "Param-prime", "Param-list"], ["void"]],
+        "Param-list" : [[",", "Param", "Param-list"], ["EPSILON"]],
+        "Param" : [["Declaration-initial", "Param-prime"]],
+        "Param-prime" : [["[", "]"], ["EPSILON"]],
+        "Compound-stmt" : [["{", "Declaration-list", "Statement-list", "}"]],
+        "Statement-list" : [["Statement", "Statement-list"], ["EPSILON"]],
+        "Statement" : [["Expression-stmt"], ["Compound-stmt"], ["Selection-stmt"], ["Iteration-stmt"], ["Return-stmt"]],
+        "Expression-stmt" : [["Expression", ";"], ["break", ";"], [";"]],
+        "Selection-stmt" : [["if", "(", "Expression", ")", "Statement", "else", "Statement"]],
+        "Iteration-stmt" : [["repeat", "Statement", "until", "(", "Expression", ")"]],
+        "Return-stmt" : [["return", "Return-stmt-prime"]],
+        "Return-stmt-prime" : [[";"], ["Expression", ";"]],
+        "Expression" : [["Simple-expression-zegond"], ["ID", "B"]],
+        "B" : [["=", "Expression"], ["[", "Expression", "]", "H"], ["Simple-expression-prime"]],
+        "H" : [["=", "Expression"], ["G", "D", "C"]],
+        "Simple-expression-zegond" : [["Additive-expression-zegond", "C"]],
 25. Simple-expression-prime -> Additive-expression-prime C
 26. C -> Relop Additive-expression | EPSILON
 27. Relop -> < | ==
