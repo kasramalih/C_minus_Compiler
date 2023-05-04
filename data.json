@@ -618,25 +618,25 @@
         "B" : [["=", "Expression"], ["[", "Expression", "]", "H"], ["Simple-expression-prime"]],
         "H" : [["=", "Expression"], ["G", "D", "C"]],
         "Simple-expression-zegond" : [["Additive-expression-zegond", "C"]],
-25. Simple-expression-prime -> Additive-expression-prime C
-26. C -> Relop Additive-expression | EPSILON
-27. Relop -> < | ==
-28. Additive-expression -> Term D
-29. Additive-expression-prime -> Term-prime D
-30. Additive-expression-zegond -> Term-zegond D
-31. D -> Addop Term D | EPSILON
-32. Addop -> + | -
-33. Term -> Factor G
-34. Term-prime -> Factor-prime G
-35. Term-zegond -> Factor-zegond G
-36. G -> * Factor G | EPSILON
-37. Factor -> ( Expression ) | ID Var-call-prime | NUM
-38. Var-call-prime -> ( Args ) | Var-prime
-39. Var-prime -> [ Expression ] | EPSILON
-40. Factor-prime -> ( Args ) | EPSILON
-41. Factor-zegond -> ( Expression ) | NUM
-42. Args -> Arg-list | EPSILON
-43. Arg-list -> Expression Arg-list-prime
-44. Arg-list-prime -> , Expression Arg-list-prime | EPSILON
+    "Simple-expression-prime ": [["Additive-expression-prime", "C"]]
+    "C" : [["Relop", "Additive-expression"], ["EPSILON"]]
+    "Relop" : [["<"], ["=="]]
+    "Additive-expression" : [["Term", "D"]]
+    "Additive-expression-prime" : ["Term-prime", "D"]
+    "Additive-expression-zegond" : [["Term-zegond", "D"]]
+    "D" : [["Addop", "Term", "D"], ["EPSILON"]]
+    "Addop" : [["+"], ["-"]]
+    "Term ": [["Factor", "G"]]
+    "Term-prime" : [["Factor-prime", "G"]]
+    "Term-zegond" : [["Factor-zegond", "G"]]
+    "G" : [["*", "Factor", "G"], ["EPSILON"]]
+    "Factor" : [["(", "Expression", ")"], ["ID", "Var-call-prime"], ["NUM"]]
+    "Var-call-prime" : [["(", "Args", ")"], ["Var-prime"]]
+    "Var-prime" : [["[", "Expression", "]"], ["EPSILON"]]
+    "Factor-prime" : [["(", "Args", ")"], ["EPSILON"]]
+    "Factor-zegond" : [["(", "Expression", ")"], ["NUM"]]
+    "Args" : [["Arg-list"], ["EPSILON"]]
+    "Arg-list" : [["Expression", "Arg-list-prime"]]
+    "Arg-list-prime" : [["," , "Expression", "Arg-list-prime"], ["EPSILON"]]
     }
 }
