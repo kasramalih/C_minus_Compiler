@@ -168,31 +168,3 @@ class Scanner:
             return 'KEYWORD'
         else:
             return 'ID'
-
-
-class Parser:
-    def __init__(self, input_lines):
-        self.scanner = Scanner()
-        self.input_lines = input_lines
-        with open('data.json') as f:
-            data = json.loads(f.read())
-            self.terminals = data["terminals"]
-            self.non_terminals = data["non-terminals"]
-            self.first = data["first"]
-            self.follow = data["follow"]
-        f.close()
-
-    def start_parser(self):
-        pass
-
-
-with open('input.txt') as input_file:
-    lines = ''.join(input_file.readlines())
-    lines += ' '
-    parser = Parser(lines)
-input_file.close()
-
-print(parser.terminals)
-print(parser.non_terminals)
-print(parser.first)
-print(parser.follow)
