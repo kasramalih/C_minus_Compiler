@@ -1,12 +1,9 @@
 import json
-from compiler import Scanner
 import pandas as pd
 
 
 class Table:
-    def __init__(self, input_lines):
-        self.scanner = Scanner()
-        self.input_lines = input_lines
+    def __init__(self):
         with open('data.json') as f:
             data = json.loads(f.read())
             self.terminals = data["terminals"]
@@ -38,17 +35,3 @@ class Table:
                     else:
                         tbl[first][non_terminal] = prod
         return tbl
-
-
-with open('input.txt') as input_file:
-    lines = ''.join(input_file.readlines())
-    lines += ' '
-    table = Table(lines)
-input_file.close()
-
-# print(table.terminals)
-# print(table.non_terminals)
-# print(table.first)
-# print(table.follow)
-# print(table.productions)
-print(table.create_table())

@@ -1,7 +1,3 @@
-from anytree import Node, RenderTree
-import json
-
-
 class Scanner:
     def __init__(self):
         self.whitespaces = {'\n', '\r', '\t', '\v', '\f', ' '}
@@ -131,6 +127,14 @@ class Scanner:
 
     def is_char_valid(self, look_ahead):
         return look_ahead.isalpha() or look_ahead.isdigit() or look_ahead in self.whitespaces or look_ahead in self.symbols
+
+    def get_next_valid_token(self, chars, i):
+        while i < len(chars):
+            token, lexeme, new_i = self.get_next_token(chars, i)
+            if token != 'WHITESPACE' and token != 'COMMENT':
+                return token, lexeme, new_i
+            i = new_i
+
 
     def add_symbol(self, symbol):
         if symbol not in self.symbol_table:
