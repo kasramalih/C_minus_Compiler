@@ -62,7 +62,7 @@ class Parser:
         print('error')
 
     def write_to_files(self, parse_tree, has_error, errors):
-        parse_tree_txt = open('parse_tree.txt', 'w+')
+        parse_tree_txt = open('parse_tree.txt', 'w+', encoding="utf-8")
         parse_tree_txt.write(parse_tree)
         parse_tree_txt.close()
 

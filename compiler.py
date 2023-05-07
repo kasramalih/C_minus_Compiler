@@ -1,4 +1,4 @@
-from parser import Parser
+from compiler_parser import Parser
 
 with open('input.txt') as input_file:
     lines = ''.join(input_file.readlines())
