@@ -732,7 +732,7 @@
       ]
     ],
     "Var-declaration-prime": [
-      ";",
+      [";"],
       [
         "[",
         "NUM",

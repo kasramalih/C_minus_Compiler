@@ -129,12 +129,11 @@ class Scanner:
         return look_ahead.isalpha() or look_ahead.isdigit() or look_ahead in self.whitespaces or look_ahead in self.symbols
 
     def get_next_valid_token(self, chars, i):
-        while i < len(chars):
+        while True:
             token, lexeme, new_i = self.get_next_token(chars, i)
             if token != 'WHITESPACE' and token != 'COMMENT':
                 return token, lexeme, new_i
             i = new_i
-
 
     def add_symbol(self, symbol):
         if symbol not in self.symbol_table:

@@ -21,17 +21,28 @@ class Table:
         for non_terminal in self.non_terminals:
             productions = self.productions[non_terminal]
             for prod in productions:
-                to_first = prod[0]
-                if to_first in self.non_terminals:
-                    firsts = self.first[to_first]
-                else:
-                    firsts = [to_first]
-                for first in firsts:
-                    if first == 'EPSILON':
-                        for terminal in self.follow[non_terminal]:
-                            tbl[terminal][non_terminal] = prod
-                            if terminal == '$':
-                                tbl['$'][non_terminal] = prod
+                check_firsts = True
+                epsilon_check = False
+                i = 0
+                while check_firsts:
+                    if i >= len(prod):
+                        epsilon_check = True
+                        break
+                    val = prod[i]
+                    if val in self.non_terminals:
+                        firsts = self.first[val]
                     else:
-                        tbl[first][non_terminal] = prod
+                        firsts = [val]
+                    check_firsts = False
+                    for f in firsts:
+                        if f == 'EPSILON':
+                            i += 1
+                            check_firsts = True
+                        else:
+                            tbl[f][non_terminal] = prod
+                if epsilon_check:
+                    for terminal in self.follow[non_terminal]:
+                        tbl[terminal][non_terminal] = prod
+                        if terminal == '$':
+                            tbl['$'][non_terminal] = prod
         return tbl
