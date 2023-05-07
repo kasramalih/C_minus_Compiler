@@ -21,6 +21,8 @@ class Parser:
         i = 0
         token, lexeme, i = self.scanner.get_next_valid_token(self.chars, i)
         a = token
+        if a == 'KEYWORD' or a == 'SYMBOL':
+            a = lexeme
         X = 'Program'
         self.stack.append('$')
         self.stack.append('Program')
@@ -29,20 +31,25 @@ class Parser:
                 self.stack.pop()
                 token, lexeme, i = self.scanner.get_next_valid_token(self.chars, i)
                 a = token
+                if a == 'KEYWORD' or a == 'SYMBOL':
+                    a = lexeme
             elif X in self.terminals:
                 self.error()
-            elif pd.isnull(self.table[a][X]):
-                self.error()
+            #elif pd.isnull(self.table[a][X]):
+                #self.error()
             else:
+                #when production is EPSILON do not add it to stack!
+                print(a, X)
                 production = self.table[a][X]
                 print(X, '->', production)
                 self.stack.pop()
                 for val in reversed(production):
-                    self.stack.append(val)
+                    if val != 'EPSILON':
+                        self.stack.append(val)
             X = self.stack[-1]
 
     def error(self):
-        pass
+        print('error')
 
 
 with open('input.txt') as input_file:
