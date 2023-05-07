@@ -1,4 +1,4 @@
-from compiler import Scanner
+from scanner import Scanner
 from table_generator import Table
 from anytree import Node, RenderTree
 
@@ -18,6 +18,7 @@ class Parser:
 
     def parse(self):
         found_errors = True
+        errors =''
         i = 0
         token, lexeme, i = self.scanner.get_next_valid_token(self.chars, i)
         a = lexeme if token == 'KEYWORD' or token == 'SYMBOL' else token
@@ -53,19 +54,22 @@ class Parser:
                         self.stack.append((val, next_par))
             X = self.stack[-1]
         Node('$', root)
-        print(RenderTree(root).by_attr())
+
+        #print(RenderTree(root).by_attr())
+        self.write_to_files(RenderTree(root).by_attr(), False, errors)
 
     def error(self):
         print('error')
 
+    def write_to_files(self, parse_tree, has_error, errors):
+        parse_tree_txt = open('parse_tree.txt', 'w+')
+        parse_tree_txt.write(parse_tree)
+        parse_tree_txt.close()
+
+        syntax_errors_txt = open('syntax_errors.txt', 'w+')
+        if not has_error:
+            syntax_errors_txt.write('There is no syntax error.')
+            syntax_errors_txt.close()
 
 def pair(a, b):
     return '(' + a + ', ' + b + ')'
-
-
-with open('input.txt') as input_file:
-    lines = ''.join(input_file.readlines())
-    lines += ' '
-input_file.close()
-parser = Parser(lines)
-parser.parse()
