@@ -15,10 +15,12 @@ class Parser:
         self.first = instance_of_table.non_terminals
         self.follow = instance_of_table.follow
         self.productions = instance_of_table.productions
+        self.parser_error = {}
 
     def parse(self):
-        found_errors = True
-        errors =''
+        found_errors = False
+        unexpected_EOF = False
+        errors = []
         i = 0
         token, lexeme, i = self.scanner.get_next_valid_token(self.chars, i)
         a = lexeme if token == 'KEYWORD' or token == 'SYMBOL' else token
@@ -34,10 +36,25 @@ class Parser:
                 token, lexeme, i = self.scanner.get_next_valid_token(self.chars, i)
                 char = (token, lexeme)
                 a = lexeme if token == 'KEYWORD' or token == 'SYMBOL' else token
-            elif X[0] in self.terminals:
-                self.error()
-            # elif not isinstance(self.table[a][X], list):
-            #     self.error()
+            elif X[0] in self.terminals:  # not a terminal
+                found_errors = True
+                self.error('missing ' + X[0], errors)
+                self.stack.pop()
+            elif not isinstance(self.table[a][X[0]], list):  # empty table cell
+                found_errors = True
+                if a in self.follow[X[0]]:
+                    self.error('missing ' + X[0], errors)
+                    self.stack.pop()
+                else:
+                    if a == "$":
+                        unexpected_EOF = True
+                        self.error('Unexpected EOF', errors)
+                        break
+                    else:
+                        self.error('illegal ' + a, errors)
+                        token, lexeme, i = self.scanner.get_next_valid_token(self.chars, i)
+                        char = (token, lexeme)
+                        a = lexeme if token == 'KEYWORD' or token == 'SYMBOL' else token
             else:
                 # when production is EPSILON do not add it to stack!
                 char = (token, lexeme)
@@ -53,23 +70,28 @@ class Parser:
                     for val in reversed(production):
                         self.stack.append((val, next_par))
             X = self.stack[-1]
-        Node('$', root)
+        if not unexpected_EOF:
+            Node('$', root)
 
-        #print(RenderTree(root).by_attr())
-        self.write_to_files(RenderTree(root).by_attr(), False, errors)
+        # print(RenderTree(root).by_attr())
+        write_to_files(RenderTree(root).by_attr(), found_errors, errors)
 
-    def error(self):
-        print('error')
+    def error(self, message, errors):
+        errors.append('#' + str(self.scanner.line_counter) + ' : syntax error, ' + str(message))
 
-    def write_to_files(self, parse_tree, has_error, errors):
-        parse_tree_txt = open('parse_tree.txt', 'w+', encoding="utf-8")
-        parse_tree_txt.write(parse_tree)
-        parse_tree_txt.close()
 
-        syntax_errors_txt = open('syntax_errors.txt', 'w+')
-        if not has_error:
-            syntax_errors_txt.write('There is no syntax error.')
-            syntax_errors_txt.close()
+def write_to_files(parse_tree, has_error, errors):
+    parse_tree_txt = open('parse_tree.txt', 'w+', encoding="utf-8")
+    parse_tree_txt.write(parse_tree)
+    parse_tree_txt.close()
+
+    syntax_errors_txt = open('syntax_errors.txt', 'w+')
+    if not has_error:
+        syntax_errors_txt.write('There is no syntax error.')
+    else:
+        syntax_errors_txt.write('\n'.join(errors) + '\n')
+    syntax_errors_txt.close()
+
 
 def pair(a, b):
     return '(' + a + ', ' + b + ')'

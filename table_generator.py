@@ -4,7 +4,7 @@ import pandas as pd
 
 class Table:
     def __init__(self):
-        with open('data.json') as f:
+        with open('dataj/data.json') as f:
             data = json.loads(f.read())
             self.terminals = data["terminals"]
             self.non_terminals = data["non-terminals"]
