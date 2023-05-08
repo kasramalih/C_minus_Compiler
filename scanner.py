@@ -100,6 +100,8 @@ class Scanner:
                     num = num + char
                     i += 1
                 elif char in self.symbols or char in self.whitespaces:
+                    if char == '\n':
+                        self.line_counter -= 1
                     return 'NUM', num, i
                 else:
                     self.add_error('Invalid number', num + char)
