@@ -1,4 +1,5 @@
 from scanner import Scanner
+from codegen import Codegen
 from table_generator import Table
 from anytree import Node, RenderTree
 
@@ -16,6 +17,7 @@ class Parser:
         self.follow = instance_of_table.follow
         self.productions = instance_of_table.productions
         self.parser_error = {}
+        self.codegen = Codegen()
 
     def parse(self):
         found_errors = False
@@ -30,7 +32,12 @@ class Parser:
         self.stack.append(('$', Node('Program')))
         self.stack.append(X)
         while X[0] != '$':
-            if X[0] == a:
+            if X[0].startswith("#"):
+                # print(X[0], lexeme)
+                self.codegen.code_gen(X[0], lexeme)
+                Node(X[0], parent=X[1])
+                self.stack.pop()
+            elif X[0] == a:
                 self.stack.pop()
                 Node(pair(char[0], char[1]), parent=X[1])
                 token, lexeme, i = self.scanner.get_next_valid_token(self.chars, i)
@@ -72,12 +79,19 @@ class Parser:
             X = self.stack[-1]
         if not unexpected_EOF:
             Node('$', root)
-
+        # print(self.codegen.ss)
+        print_program_block(self.codegen.pb)
         # print(RenderTree(root).by_attr())
         write_to_files(RenderTree(root).by_attr(), found_errors, errors)
 
     def error(self, message, errors):
         errors.append('#' + str(self.scanner.line_counter) + ' : syntax error, ' + str(message))
+
+
+def print_program_block(pb):
+    for i in pb.keys():
+        # todo
+        pass
 
 
 def write_to_files(parse_tree, has_error, errors):

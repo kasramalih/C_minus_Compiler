@@ -11,6 +11,7 @@ class Table:
             self.first = data["first"]
             self.follow = data["follow"]
             self.productions = data["productions"]
+            self.augmented_productions = data["augmented_productions"]
         f.close()
 
     def create_table(self):
@@ -20,7 +21,8 @@ class Table:
         tbl = pd.DataFrame(columns=columns, index=self.non_terminals)
         for non_terminal in self.non_terminals:
             productions = self.productions[non_terminal]
-            for prod in productions:
+            augmented_productions = self.augmented_productions[non_terminal]
+            for prod, aug_prod in zip(productions, augmented_productions):
                 check_firsts = True
                 epsilon_check = False
                 i = 0
@@ -39,10 +41,10 @@ class Table:
                             i += 1
                             check_firsts = True
                         else:
-                            tbl[f][non_terminal] = prod
+                            tbl[f][non_terminal] = aug_prod
                 if epsilon_check:
                     for terminal in self.follow[non_terminal]:
-                        tbl[terminal][non_terminal] = prod
+                        tbl[terminal][non_terminal] = aug_prod
                         if terminal == '$':
-                            tbl['$'][non_terminal] = prod
+                            tbl['$'][non_terminal] = aug_prod
         return tbl
