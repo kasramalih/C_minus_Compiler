@@ -1107,17 +1107,21 @@
     ],
     "Declaration-initial": [
       [
+        "#void_check_type_save",
         "Type-specifier",
+        "#void_check_name_save",
         "#pid",
         "ID"
       ]
     ],
     "Declaration-prime": [
       [
-        "Fun-declaration-prime"
+        "Fun-declaration-prime",
+        "#ignore_void_check"
       ],
       [
-        "Var-declaration-prime"
+        "Var-declaration-prime",
+        "#void_check"
       ]
     ],
     "Var-declaration-prime": [
@@ -1279,6 +1283,7 @@
         "Simple-expression-zegond"
       ],
       [
+        "#defined_check",
         "#pid",
         "ID",
         "B"

@@ -6,13 +6,17 @@ class Codegen():
         self.i = 0
         self.st = {}
         self.current_available_address = 508
+        self.semantic_errors = []
 
-    def code_gen(self, action, lexeme):
+    def code_gen(self, action, lexeme, line_no):
         if action == "#pid":
             if lexeme not in ["main", "output"]:
                 addr = str(self.findaddr(lexeme))
                 # print(lexeme, addr)
                 self.ss.append(addr)
+            elif lexeme == 'main':  # for illegal type error only
+                self.ss.pop()
+                self.ss.pop()
         elif action == "#assign_initial_var":
             self.add_and_increment_pb(generate_3address_code('ASSIGN', '#0', self.ss.pop()))
 
@@ -93,6 +97,23 @@ class Codegen():
         elif action == '#jp':
             pb_idx = self.ss.pop()
             self.pb[int(pb_idx)] = generate_3address_code('JP', str(self.i))
+        elif action == '#void_check_type_save':
+            self.ss.append(lexeme)
+        elif action == '#void_check_name_save':
+            self.ss.append(lexeme)
+        elif action == '#ignore_void_check':  # TODO check
+            if self.ss:
+                self.ss.pop()
+                self.ss.pop()
+        elif action == '#void_check':
+            id = self.ss.pop()
+            type = self.ss.pop()
+            if type == 'void':
+                self.semantic_errors.append(f"#{line_no - 1}: Semantic Error! Illegal type of void for '{id}'.")
+            self.ss.append(id)
+        elif action == '#defined_check':
+            if lexeme not in self.st.keys() and lexeme != 'output':
+                self.semantic_errors.append(f"#{line_no}: Semantic Error! '{lexeme}' is not defined.")
         else:
             print("ridiiiiiiii")
 

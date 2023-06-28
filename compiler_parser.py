@@ -35,7 +35,7 @@ class Parser:
         while X[0] != '$':
             if X[0].startswith("#"):
                 # print(X[0], lexeme)
-                self.codegen.code_gen(X[0], lexeme)
+                self.codegen.code_gen(X[0], lexeme, self.scanner.line_counter)
                 Node(X[0], parent=X[1])
                 self.stack.pop()
             elif X[0] == a:
@@ -82,8 +82,9 @@ class Parser:
             Node('$', root)
         # print(self.codegen.ss)
         print_program_block(self.codegen.pb)
+        print('\n'.join(self.codegen.semantic_errors))
         # print(RenderTree(root).by_attr())
-        # UniqueDotExporter(root).to_picture("output.png")
+        UniqueDotExporter(root).to_picture("output.png")
         write_to_files(RenderTree(root).by_attr(), found_errors, errors)
 
     def error(self, message, errors):
