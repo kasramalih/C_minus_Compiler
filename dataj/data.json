@@ -732,7 +732,9 @@
       ]
     ],
     "Var-declaration-prime": [
-      [";"],
+      [
+        ";"
+      ],
       [
         "[",
         "NUM",
@@ -1082,8 +1084,7 @@
       ]
     ]
   },
-  "augmented_productions":
-       {
+  "augmented_productions": {
     "Program": [
       [
         "Declaration-list"
@@ -1126,6 +1127,7 @@
       ],
       [
         "[",
+        "#array",
         "NUM",
         "]",
         ";"
@@ -1224,7 +1226,8 @@
       ],
       [
         "break",
-        ";"
+        ";",
+        "#break"
       ],
       [
         ";"
@@ -1236,19 +1239,24 @@
         "(",
         "Expression",
         ")",
+        "#save",
         "Statement",
         "else",
-        "Statement"
+        "#jpf_save",
+        "Statement",
+        "#jp"
       ]
     ],
     "Iteration-stmt": [
       [
         "repeat",
+        "#label",
         "Statement",
         "until",
         "(",
         "Expression",
-        ")"
+        ")",
+        "#rep_jpf"
       ]
     ],
     "Return-stmt": [
@@ -1286,6 +1294,7 @@
         "[",
         "Expression",
         "]",
+        "#index",
         "H"
       ],
       [
@@ -1295,7 +1304,8 @@
     "H": [
       [
         "=",
-        "Expression"
+        "Expression",
+        "#assign"
       ],
       [
         "G",
@@ -1318,7 +1328,8 @@
     "C": [
       [
         "Relop",
-        "Additive-expression"
+        "Additive-expression",
+        "#cmp"
       ],
       [
         "EPSILON"
@@ -1326,9 +1337,11 @@
     ],
     "Relop": [
       [
+        "#LT",
         "<"
       ],
       [
+        "#EQ",
         "=="
       ]
     ],
@@ -1393,6 +1406,7 @@
       [
         "*",
         "Factor",
+        "#mult",
         "G"
       ],
       [
@@ -1429,7 +1443,8 @@
       [
         "[",
         "Expression",
-        "]"
+        "]",
+        "#index"
       ],
       [
         "EPSILON"

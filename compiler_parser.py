@@ -2,6 +2,7 @@ from scanner import Scanner
 from codegen import Codegen
 from table_generator import Table
 from anytree import Node, RenderTree
+from anytree.exporter import UniqueDotExporter
 
 
 class Parser:
@@ -82,6 +83,7 @@ class Parser:
         # print(self.codegen.ss)
         print_program_block(self.codegen.pb)
         # print(RenderTree(root).by_attr())
+        # UniqueDotExporter(root).to_picture("output.png")
         write_to_files(RenderTree(root).by_attr(), found_errors, errors)
 
     def error(self, message, errors):
@@ -89,9 +91,11 @@ class Parser:
 
 
 def print_program_block(pb):
-    for i in pb.keys():
-        # todo
-        pass
+    pb_str = ""
+    for i in range(len(pb)):
+        pb_str += str(i) + '	' + pb[i] + '\n'
+    print(pb_str)
+    # TODO write to file
 
 
 def write_to_files(parse_tree, has_error, errors):
