@@ -81,22 +81,28 @@ class Parser:
         if not unexpected_EOF:
             Node('$', root)
         # print(self.codegen.ss)
-        print_program_block(self.codegen.pb)
+
+        write_program_block(self.codegen.pb, self.codegen.semantic_errors)
         print('\n'.join(self.codegen.semantic_errors))
         # print(RenderTree(root).by_attr())
-        UniqueDotExporter(root).to_picture("output.png")
+        # UniqueDotExporter(root).to_picture("output.png")
         write_to_files(RenderTree(root).by_attr(), found_errors, errors)
 
     def error(self, message, errors):
         errors.append('#' + str(self.scanner.line_counter) + ' : syntax error, ' + str(message))
 
 
-def print_program_block(pb):
-    pb_str = ""
-    for i in range(len(pb)):
-        pb_str += str(i) + '	' + pb[i] + '\n'
-    print(pb_str)
-    # TODO write to file
+def write_program_block(pb, semantic_error_found):
+    pb_txt = open('output.txt', 'w+', encoding="utf-8")
+    if semantic_error_found:
+        pb_txt.write("The output code has not been generated.")
+        pb_txt.close()
+    else:
+        pb_str = ""
+        for i in range(len(pb)):
+            pb_str += str(i) + '\t' + pb[i] + '\n'
+        pb_txt.write(pb_str)
+    pb_txt.close()
 
 
 def write_to_files(parse_tree, has_error, errors):
