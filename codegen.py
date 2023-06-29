@@ -7,6 +7,7 @@ class Codegen():
         self.st = {}
         self.current_available_address = 508
         self.semantic_errors = []
+        self.scope = 0
 
     def code_gen(self, action, lexeme, line_no):
         if action == "#pid":
@@ -115,7 +116,12 @@ class Codegen():
                 self.semantic_errors.append(f"#{line_no}: Semantic Error! '{lexeme}' is not defined.")
             pass
         elif action == '#scope_in':
-            # TODO
+            function_lexeme_address = self.ss.pop()
+            function_lexeme = self.ss.pop()
+            return_type = self.ss.pop()
+            self.st[function_lexeme] = [self.scope, function_lexeme_address, return_type, self.i, []]
+            self.scope = 1
+            self.ss.append(function_lexeme)
             """On this action:
                 1- create pointer to a new symbol table for the function's scope
                 2- set return type (already in stack, may need to remove the #ignore_void_check action) 
@@ -124,20 +130,38 @@ class Codegen():
                 4- change current symbol table to the new one
             """
         elif action == '#scope_out':
-            # TODO
+            print('ALL VARS IN SCOPE:\n-----------------------------')
+            for k in self.st.keys():
+                print(k, self.st[k])
+            for l in self.st.keys():
+                if l[0] == self.scope:
+                    del l
+            self.scope = 0
+            for k in self.st.keys():
+                print(k, self.st[k])
+            print('-----------------------------')
             """On this action:
                 1- change current symbol table to global
                 2- set number of arguments in global symbol table
                 (may need a new action for this after param declarations)
             """
+        elif action == '#param_first':
+            address = self.ss.pop()
+            function_lexeme = self.ss[-1]
+            self.st[function_lexeme][-1].append(['int', address])
         elif action == '#param':
-            # TODO
+            param = self.ss.pop()
+            param_lexeme = self.ss.pop()
+            type = self.ss.pop()
+            function_lexeme = self.ss[-1]
+            self.st[function_lexeme][-1].append([type, param])
             """On this action:
                 1- added type, name, reg, index of param into symbol table
                 2- update total number of params(can be handled in stack)
             """
         elif action == '#arr_param':
-            # TODO
+            function_lexeme = self.ss[-1]
+            self.st[function_lexeme][-1][-1][0] = 'array'
             """On this action:
                 1- added type, name, reg, index of param into symbol table
                 2- update total number of arguments(can be handled in stack)
@@ -165,9 +189,9 @@ class Codegen():
 
     def findaddr(self, inp):
         if inp not in self.st.keys():
-            self.st[inp] = self.current_available_address
+            self.st[inp] = [self.scope, self.current_available_address]
             self.current_available_address += 4
-        return self.st[inp]
+        return self.st[inp][1]
 
     def gettemp(self):
         addr = self.current_available_address
