@@ -1139,10 +1139,12 @@
     ],
     "Fun-declaration-prime": [
       [
+        "#scope_in",
         "(",
         "Params",
         ")",
-        "Compound-stmt"
+        "Compound-stmt",
+        "#scope_out"
       ]
     ],
     "Type-specifier": [
@@ -1156,6 +1158,7 @@
     "Params": [
       [
         "int",
+        "#param",
         "ID",
         "Param-prime",
         "Param-list"
@@ -1183,7 +1186,8 @@
     "Param-prime": [
       [
         "[",
-        "]"
+        "]",
+        "#arr_param"
       ],
       [
         "EPSILON"

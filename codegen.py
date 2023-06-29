@@ -2,8 +2,8 @@ class Codegen():
     def __init__(self):
         self.ss = []
         self.break_s = []
-        self.pb = []
-        self.i = 0
+        self.pb = ["(ASSIGN, #4, 0,   )","(JP, 2,  ,   )"]
+        self.i = 2
         self.st = {}
         self.current_available_address = 508
         self.semantic_errors = []
@@ -110,10 +110,56 @@ class Codegen():
             type = self.ss.pop()
             if type == 'void':
                 self.semantic_errors.append(f"#{line_no - 1}: Semantic Error! Illegal type of void for '{id}'.")
-            self.ss.append(id)
-        elif action == '#defined_check':
+        elif action == '#defined_check':  # checks for definition of variables only
             if lexeme not in self.st.keys() and lexeme != 'output':
                 self.semantic_errors.append(f"#{line_no}: Semantic Error! '{lexeme}' is not defined.")
+            pass
+        elif action == '#scope_in':
+            # TODO
+            """On this action:
+                1- create pointer to a new symbol table for the function's scope
+                2- set return type (already in stack, may need to remove the #ignore_void_check action) 
+                in global symbol table
+                3- set jump address in global symbol table
+                4- change current symbol table to the new one
+            """
+        elif action == '#scope_out':
+            # TODO
+            """On this action:
+                1- change current symbol table to global
+                2- set number of arguments in global symbol table
+                (may need a new action for this after param declarations)
+            """
+        elif action == '#param':
+            # TODO
+            """On this action:
+                1- added type, name, reg, index of param into symbol table
+                2- update total number of params(can be handled in stack)
+            """
+        elif action == '#arr_param':
+            # TODO
+            """On this action:
+                1- added type, name, reg, index of param into symbol table
+                2- update total number of arguments(can be handled in stack)
+            """
+        # TODO these actions are not added in augmented productions yet. Add
+        elif action == '#check_invoke_in':
+            # TODO
+            """On this action:
+                1- start counting the following args and match with function's symbol table
+                2- change symbol table to match params
+            """
+        elif action == '#check_arg':
+            # TODO
+            """On this action:
+                1- check for type match
+                In next phase we also need to assign value to registers
+            """
+        elif action == 'check_invoke_out':
+            # TODO
+            """On this action:
+                1- check total number of args
+            """
         else:
             print("ridiiiiiiii")
 
