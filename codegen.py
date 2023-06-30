@@ -1,6 +1,5 @@
 class Codegen:
     def __init__(self):
-        self.func_name = ''
         self.ss = []
         self.break_s = []
         self.pb = ["(ASSIGN, #4, 0,   )", "(JP, 2,  ,   )"]
@@ -9,18 +8,17 @@ class Codegen:
         self.current_available_address = 508
         self.semantic_errors = []
         self.scope = 0
-        self.count_arg = 0
-        self.arg_list = []
+        self.st['output'] = [0, self.current_available_address - 8, 'int', None, 1, [['int', 504]]]
+        self.iter_s = []
 
     def code_gen(self, action, lexeme, line_no):
         if action == "#pid":
-            if lexeme != "output":
-                addr = str(self.findaddr(lexeme))
+            addr = str(self.findaddr(lexeme))
                 # print(lexeme, addr)
-                self.ss.append(addr)
-            elif lexeme == 'main':  # for illegal type error only
-                self.ss.pop()
-                self.ss.pop()
+            self.ss.append(addr)
+            # elif lexeme == 'main':  # for illegal type error only
+            #     self.ss.pop()
+            #     self.ss.pop()
         elif action == "#assign_initial_var":
             self.add_and_increment_pb(generate_3address_code('ASSIGN', '#0', self.ss.pop()))
 
@@ -43,10 +41,6 @@ class Codegen:
             else:
                 self.add_and_increment_pb(generate_3address_code('SUB', t3, t1, temp_addr))
             self.ss.append(temp_addr)
-
-        elif action == "#call_out":
-            t1 = self.ss.pop()
-            self.add_and_increment_pb(generate_3address_code('PRINT', t1))
         elif action == "#mult":
             t1 = self.ss.pop()
             t2 = self.ss.pop()
@@ -75,6 +69,7 @@ class Codegen:
             self.add_and_increment_pb(generate_3address_code(op, first, second, temp_addr))
             self.ss.append(temp_addr)
         elif action == "#label":
+            self.iter_s.append(1)
             self.ss.append(self.i)
         elif action == "#rep_jpf":
             cmp_res = self.ss.pop()
@@ -83,7 +78,10 @@ class Codegen:
             if self.break_s:
                 to_break = self.break_s.pop()
                 self.pb[to_break] = generate_3address_code('JP', self.i)
+            self.iter_s.pop()
         elif action == "#break":
+            if not self.iter_s:
+                self.semantic_errors.append(f"#{line_no - 1}: Semantic Error! No 'repeat ... until' found for 'break'")
             self.break_s.append(self.i)
             self.pb.append('')
             self.i += 1
@@ -113,7 +111,6 @@ class Codegen:
         elif action == '#defined_check':  # checks for definition of variables only
             if lexeme not in self.st.keys() and lexeme != 'output':
                 self.semantic_errors.append(f"#{line_no}: Semantic Error! '{lexeme}' is not defined.")
-            pass
         elif action == '#scope_in':
             function_lexeme_address = self.ss.pop()
             function_lexeme = self.ss.pop()
@@ -179,41 +176,46 @@ class Codegen:
                 1- check for type match
                 In next phase we also need to assign value to registers
             """
-        elif action == 'check_invoke_out':
+        elif action == '#check_invoke_out':
             # TODO
             """On this action:
                 1- check total number of args
             """
+        elif action == '#init_arg_check':
+            func_addr = self.ss.pop()
+            for k in self.st.keys():
+                if str(self.st[k][1]) == str(func_addr):
+                    self.ss.append(k)
+            self.ss.append(0)
         elif action == "#count_arg":
-            self.arg_list.append(self.ss.pop())
-            if self.count_arg == 0:
-                func_addr = self.ss.pop()
-                for k in self.st.keys():
-                    if self.st[k][1] == func_addr:
-                        self.func_name = k
-            self.count_arg += 1
-
-            print('------0-------', self.func_name, self.arg_list[self.count_arg - 1])
+            arg = self.ss.pop() # TODO do sth in next phase
+            cnt = self.ss.pop()
+            func_name = self.ss[-1]
+            print(func_name)
+            cnt += 1
+            if func_name == 'output':
+                self.add_and_increment_pb(generate_3address_code('PRINT', arg))
+            print('------0-------', self.ss[-1], cnt)
             arg_type = 'int'
             for k in self.st.keys():
-                if str(self.st[k][1]) == str(self.arg_list[self.count_arg - 1]):
+                if str(self.st[k][1]) == str(arg):
                     try:
                         arg_type = self.st[k][2]
                     except:
                         arg_type = 'int'
-
-            if self.st[self.func_name][-1][self.count_arg - 1][0] != arg_type:
+            if self.st[func_name][-1][cnt - 1][0] != arg_type:
                 self.semantic_errors.append(
-                    f"#{line_no}: Semantic Error! Mismatch in type of argument '{self.count_arg}' of '{self.func_name}'. Expected '{self.st[self.func_name][-1][self.count_arg - 1][0]}' but got '{arg_type}' instead")
-                # 16: Semantic Error! Mismatch in type of argument 1 of 'sum1array'. Expected 'array' but got 'int' instead.
+                    f"#{line_no}: Semantic Error! Mismatch in type of argument '{cnt}' of '{func_name}'. Expected '{self.st[func_name][-1][cnt - 1][0]}' but got '{arg_type}' instead")
+            self.ss.append(cnt)
         elif action == "#check_count":
             # need return address
-            self.ss.append(self.gettemp())
-            if self.count_arg != self.st[self.func_name][-2]:
+            total = self.ss.pop()
+            func_name = self.ss.pop()
+            if self.st[func_name][2] == 'int':
+                self.ss.append(self.gettemp())
+            if total != self.st[func_name][-2]:
                 self.semantic_errors.append(
-                    f"#{line_no}: Semantic Error!  Mismatch in numbers of arguments of '{self.func_name}'.")
-            self.func_name = ''
-            self.count_arg = 0
+                    f"#{line_no}: Semantic Error!  Mismatch in numbers of arguments of '{func_name}'.")
         else:
             print("ridiiiiiiii")
 

@@ -1440,11 +1440,11 @@
       ]
     ],
     "Var-call-prime": [
-      [
+        "#init_arg_check",
         "(",
         "Args",
-        ")"
-      ],
+        ")",
+        "#check_count",
       [
         "Var-prime"
       ]
@@ -1462,10 +1462,11 @@
     ],
     "Factor-prime": [
       [
+        "#init_arg_check",
         "(",
         "Args",
         ")",
-        "#call_out"
+        "#check_count"
       ],
       [
         "EPSILON"
@@ -1494,8 +1495,7 @@
       [
         "Expression",
         "#count_arg",
-        "Arg-list-prime",
-        "#check_count"
+        "Arg-list-prime"
       ]
     ],
     "Arg-list-prime": [
