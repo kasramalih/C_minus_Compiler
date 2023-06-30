@@ -88,7 +88,6 @@ class Parser:
         # UniqueDotExporter(root).to_picture("output.png")
         write_to_files(RenderTree(root).by_attr(), found_errors, errors)
 
-
     def error(self, message, errors):
         errors.append('#' + str(self.scanner.line_counter) + ' : syntax error, ' + str(message))
 

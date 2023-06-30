@@ -1493,13 +1493,16 @@
     "Arg-list": [
       [
         "Expression",
-        "Arg-list-prime"
+        "#count_arg",
+        "Arg-list-prime",
+        "#check_count"
       ]
     ],
     "Arg-list-prime": [
       [
         ",",
         "Expression",
+        "#count_arg",
         "Arg-list-prime"
       ],
       [
