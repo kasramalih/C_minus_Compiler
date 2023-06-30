@@ -1235,8 +1235,8 @@
       ],
       [
         "break",
-        ";",
-        "#break"
+        "#break",
+        ";"
       ],
       [
         ";"
@@ -1280,7 +1280,8 @@
       ],
       [
         "Expression",
-        ";"
+        ";",
+        "#pop_return"
       ]
     ],
     "Expression": [
@@ -1289,7 +1290,6 @@
       ],
       [
         "#defined_check",
-        "#pid",
         "ID",
         "B"
       ]
@@ -1430,7 +1430,7 @@
         ")"
       ],
       [
-        "#pid",
+        "#defined_check",
         "ID",
         "Var-call-prime"
       ],
