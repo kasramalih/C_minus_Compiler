@@ -23,9 +23,16 @@ class Codegen:
             self.ss.append("#" + str(lexeme))
         elif action == "#assign":
             t1 = self.ss.pop()
+            if t1 == '#assign':
+                t1 = self.ss.pop()
             t2 = self.ss.pop()
-            # todo check if types are ok
             self.add_and_increment_pb(generate_3address_code('ASSIGN', t1, t2))
+            self.ss.append(t2)
+            self.ss.append('#assign')
+        elif action == "#pop_assign":
+            if self.ss[-1] == '#assign':
+                self.ss.pop()
+                self.ss.pop()
         elif action == "#psymbol":
             self.ss.append(lexeme)
         elif action == "#addsub":

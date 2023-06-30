@@ -11,7 +11,7 @@ class Parser:
         self.stack = []
         self.chars = input_chars
         instance_of_table = Table()
-        self.table = instance_of_table.create_table()
+        self.table, self.nt_to_id, self.t_to_id = instance_of_table.create_table()
         self.terminals = instance_of_table.terminals
         self.non_terminals = instance_of_table.non_terminals
         self.first = instance_of_table.non_terminals
@@ -47,7 +47,7 @@ class Parser:
                 found_errors = True
                 self.error('missing ' + X[0], errors)
                 self.stack.pop()
-            elif not isinstance(self.table[a][X[0]], list):  # empty table cell
+            elif not isinstance(self.table[self.t_to_id[a]][self.nt_to_id[X[0]]], list):  # empty table cell
                 found_errors = True
                 if a in self.follow[X[0]]:
                     self.error('missing ' + X[0], errors)
@@ -65,7 +65,7 @@ class Parser:
             else:
                 # when production is EPSILON do not add it to stack!
                 char = (token, lexeme)
-                production = self.table[a][X[0]]
+                production = self.table[self.t_to_id[a]][self.nt_to_id[X[0]]]
                 self.stack.pop()
                 if X[0] == 'Program':
                     next_par = root
@@ -82,13 +82,21 @@ class Parser:
         # print(self.codegen.ss)
 
         write_program_block(self.codegen.pb, self.codegen.semantic_errors)
-        print('\n'.join(self.codegen.semantic_errors))
+        write_semantic_errors(self.codegen.semantic_errors)
         # print(RenderTree(root).by_attr())
         # UniqueDotExporter(root).to_picture("output.png")
         write_to_files(RenderTree(root).by_attr(), found_errors, errors)
 
     def error(self, message, errors):
         errors.append('#' + str(self.scanner.line_counter) + ' : syntax error, ' + str(message))
+
+
+def write_semantic_errors(errors):
+    error_text = open('semantic_errors.txt', 'w+', encoding='utf-8')
+    if errors:
+        error_text.write('\n'.join(errors))
+    else:
+        error_text.write('The input program is semantically correct.')
 
 
 def write_program_block(pb, semantic_error_found):
