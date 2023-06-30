@@ -1440,11 +1440,13 @@
       ]
     ],
     "Var-call-prime": [
+      [
         "#init_arg_check",
         "(",
         "Args",
         ")",
-        "#check_count",
+        "#check_count"
+        ],
       [
         "Var-prime"
       ]

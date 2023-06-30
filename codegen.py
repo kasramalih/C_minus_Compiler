@@ -8,17 +8,13 @@ class Codegen:
         self.current_available_address = 508
         self.semantic_errors = []
         self.scope = 0
-        self.st['output'] = [0, self.current_available_address - 8, 'int', None, 1, [['int', 504]]]
+        self.st['output'] = [0, self.current_available_address - 8, 'void', None, 1, [['int', 504]]]
         self.iter_s = []
 
     def code_gen(self, action, lexeme, line_no):
         if action == "#pid":
             addr = str(self.findaddr(lexeme))
-                # print(lexeme, addr)
             self.ss.append(addr)
-            # elif lexeme == 'main':  # for illegal type error only
-            #     self.ss.pop()
-            #     self.ss.pop()
         elif action == "#assign_initial_var":
             self.add_and_increment_pb(generate_3address_code('ASSIGN', '#0', self.ss.pop()))
 
@@ -28,6 +24,7 @@ class Codegen:
         elif action == "#assign":
             t1 = self.ss.pop()
             t2 = self.ss.pop()
+            # todo check if types are ok
             self.add_and_increment_pb(generate_3address_code('ASSIGN', t1, t2))
         elif action == "#psymbol":
             self.ss.append(lexeme)
@@ -36,6 +33,7 @@ class Codegen:
             t2 = self.ss.pop()
             t3 = self.ss.pop()
             temp_addr = self.gettemp()
+            self.type_checker(t1, t3, line_no)
             if t2 == "+":
                 self.add_and_increment_pb(generate_3address_code('ADD', t3, t1, temp_addr))
             else:
@@ -44,11 +42,15 @@ class Codegen:
         elif action == "#mult":
             t1 = self.ss.pop()
             t2 = self.ss.pop()
+            self.type_checker(t1, t2, line_no)
             temp_addr = self.gettemp()
             self.add_and_increment_pb(generate_3address_code('MULT', t1, t2, temp_addr))
             self.ss.append(temp_addr)
         elif action == "#array":
             t1 = self.ss.pop()
+            for k in self.st.keys():
+                if str(self.st[k][1]) == str(t1):
+                    self.st[k].append('array')
             size = int(lexeme)
             self.current_available_address += 4 * (size - 1)
             self.add_and_increment_pb(generate_3address_code('ASSIGN', "#0", t1))
@@ -127,17 +129,21 @@ class Codegen:
                 4- change current symbol table to the new one
             """
         elif action == '#scope_out':
+            """
             print('ALL VARS IN SCOPE:\n-----------------------------')
             for k in self.st.keys():
                 print(k, self.st[k])
+            """
             for k, v in list(self.st.items()):
                 if v[0] == self.scope:
                     del self.st[k]
             self.scope = 0
+            """
             print("---------------------\n AFTER SCOPE:\n------------------------")
             for k in self.st.keys():
                 print(k, self.st[k])
             print('-----------------------------')
+            """
             self.ss.pop()
             """On this action:
                 1- change current symbol table to global
@@ -188,14 +194,12 @@ class Codegen:
                     self.ss.append(k)
             self.ss.append(0)
         elif action == "#count_arg":
-            arg = self.ss.pop() # TODO do sth in next phase
+            arg = self.ss.pop()  # TODO do sth in next phase
             cnt = self.ss.pop()
             func_name = self.ss[-1]
-            print(func_name)
             cnt += 1
             if func_name == 'output':
                 self.add_and_increment_pb(generate_3address_code('PRINT', arg))
-            print('------0-------', self.ss[-1], cnt)
             arg_type = 'int'
             for k in self.st.keys():
                 if str(self.st[k][1]) == str(arg):
@@ -215,13 +219,12 @@ class Codegen:
                 self.ss.append(self.gettemp())
             if total != self.st[func_name][-2]:
                 self.semantic_errors.append(
-                    f"#{line_no}: Semantic Error!  Mismatch in numbers of arguments of '{func_name}'.")
+                    f"#{line_no}: Semantic Error! Mismatch in numbers of arguments of '{func_name}'.")
         else:
             print("ridiiiiiiii")
 
     def findaddr(self, inp):
         if inp not in self.st.keys():
-            print('-----------------------------findaddr', inp, self.ss)
             self.st[inp] = [self.scope, self.current_available_address]
             self.current_available_address += 4
         return self.st[inp][1]
@@ -234,6 +237,25 @@ class Codegen:
     def add_and_increment_pb(self, code):
         self.pb.append(code)
         self.i += 1
+
+    def type_checker(self, address_op1, address_op2, line_no):
+        type_op1 = ''
+        type_op2 = ''
+        for k in self.st.keys():
+            if str(self.st[k][1]) == str(address_op1):
+                try:
+                    type_op1 = self.st[k][2]
+                except:
+                    type_op1 = 'int'
+            if str(self.st[k][1]) == str(address_op2):
+                try:
+                    type_op2 = self.st[k][2]
+                except:
+                    type_op2 = 'int'
+        if type_op1 == 'array' or type_op2 == 'array':
+            self.semantic_errors.append(
+                f"#{line_no}: Semantic Error! Type mismatch in operands, Got array instead of int.")
+        # 26: Semantic Error! Type mismatch in operands, Got array instead of int.
 
 
 def generate_3address_code(op, operand1, operand2=' ', operand3=' '):

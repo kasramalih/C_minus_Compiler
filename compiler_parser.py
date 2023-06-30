@@ -34,7 +34,6 @@ class Parser:
         self.stack.append(X)
         while X[0] != '$':
             if X[0].startswith("#"):
-                # print(X[0], lexeme)
                 self.codegen.code_gen(X[0], lexeme, self.scanner.line_counter)
                 Node(X[0], parent=X[1])
                 self.stack.pop()
