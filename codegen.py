@@ -132,7 +132,7 @@ class Codegen:
                 if v[0] == self.scope:
                     del self.st[k]
             self.scope = 0
-            self.ss.pop()
+            # self.ss.pop()
         elif action == '#param_first':
             address = self.ss.pop()
             function_lexeme = self.ss[-1]
