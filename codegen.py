@@ -2,24 +2,27 @@ class Codegen:
     def __init__(self):
         self.ss = []
         self.break_s = []
-        self.pb = ["(ASSIGN, #4, 0,   )", "(JP, 2,  ,   )"]
-        self.i = 2
+        self.pb = []
+        self.pb.append('')
+        self.i = 1
         self.st = {}
         self.current_available_address = 3000
         self.current_indirect_address = 500
         self.semantic_errors = []
         self.scope = 0
-        self.st['output'] = [0, self.current_available_address - 8, self.current_indirect_address - 4, 'void', None, 1, [['int', 504]]]
+        # scope, add, iadd, type, start of  func, return add, return val, no.arg, params
+        self.st['output'] = [0, self.current_available_address - 8, self.current_indirect_address - 4, 'void', None,
+                             None, None, 1, [['int', 504]]]
         self.iter_s = []
 
     def code_gen(self, action, lexeme, line_no):
         """
         phase 4:
-        1-  Jump to main function on beginning of program
-        2-  update all 3address codes to indirect memory addressing
+        1-  Jump to main function on beginning of program - done
+        2-  update all 3address codes to indirect memory addressing - done
         3-  on function invocation:
-            a. In caller, save arguments into function params
-            b. In caller, save return address(unique for each function)
+            a. In caller, save arguments into function params - done
+            b. In caller, save return address(unique for each function) - done
             d. optional: In caller, save all symbols plus return address of previous environment to stack
             (this is different from SS since it should appear in the final code)
         4- on function return:
@@ -30,12 +33,16 @@ class Codegen:
         """
         if action == "#pid":
             addr, indirect_addr = self.findaddr(lexeme)
+            self.ss.append('@' + addr)
+        elif action == "#assign_initial_var":
+            self.add_and_increment_pb(generate_3address_code('ASSIGN', '#0', self.ss.pop()))
+        elif action == "#declare_pid":
+            addr, indirect_addr = self.findaddr(lexeme)
             # assign #500, 3000
             self.add_and_increment_pb(generate_3address_code('ASSIGN', '#' + str(indirect_addr), addr))
             self.ss.append('@' + addr)
         elif action == "#assign_initial_var":
             self.add_and_increment_pb(generate_3address_code('ASSIGN', '#0', self.ss.pop()))
-
         elif action == "#pnum":
             # just put number in stack
             self.ss.append("#" + str(lexeme))
@@ -129,9 +136,14 @@ class Codegen:
         elif action == '#scope_in':
             function_lexeme_address = self.ss.pop()
             function_lexeme = self.ss.pop()
+            if function_lexeme == "main":
+                self.pb[0] = generate_3address_code('JP', str(self.i))
             return_type = self.ss.pop()
             no_args = 0
-            self.st[function_lexeme] = [self.scope, function_lexeme_address, return_type, self.i, no_args, []]
+            return_address = self.gettemp()
+            return_val = self.gettemp()
+            self.st[function_lexeme] = [self.scope, function_lexeme_address, return_type, self.i, return_address,
+                                        return_val, no_args, []]
             self.scope = 1
             self.ss.append(function_lexeme)
         elif action == '#scope_out':
@@ -167,15 +179,21 @@ class Codegen:
             cnt += 1
             if func_name == 'output':
                 self.add_and_increment_pb(generate_3address_code('PRINT', arg))
-            if cnt > self.st[func_name][-2]:
-                self.ss.append(cnt)
-                return
+            code = generate_3address_code('ASSIGN', arg[1:], self.st[func_name][-1][cnt - 1][1][1:])
+            self.add_and_increment_pb(code)
             self.ss.append(cnt)
         elif action == "#check_count":
             total = self.ss.pop()
             func_name = self.ss.pop()
-            if self.st[func_name][2] == 'int':
-                self.ss.append(self.gettemp())
+
+            # scope, add, iadd, type, start of  func, return add, return val, no.arg, params
+
+            # assign return address
+            self.add_and_increment_pb(generate_3address_code('ASSIGN', str(self.i + 2), self.st[func_name][-4]))
+            # jump to start of function
+            self.add_and_increment_pb(generate_3address_code('JP', self.st[func_name][4]))
+            if self.st[func_name][3] == 'int':
+                self.ss.append(self.st[func_name][-3])
         elif action == "#pop_return":
             self.ss.pop()
         else:

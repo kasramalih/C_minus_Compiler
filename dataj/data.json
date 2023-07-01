@@ -1110,7 +1110,7 @@
         "#void_check_type_save",
         "Type-specifier",
         "#void_check_name_save",
-        "#pid",
+        "#declare_pid",
         "ID"
       ]
     ],
