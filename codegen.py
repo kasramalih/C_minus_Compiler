@@ -14,6 +14,7 @@ class Codegen:
         self.st['output'] = [0, self.current_available_address - 8, self.current_indirect_address - 4, 'void', None,
                              None, None, 1, [['int', 504]]]
         self.iter_s = []
+        self.fst = []
 
     def code_gen(self, action, lexeme, line_no):
         """
@@ -142,10 +143,12 @@ class Codegen:
             no_args = 0
             return_address = self.gettemp()
             return_val = self.gettemp()
+            self.fst.append((return_address, return_val))
             self.st[function_lexeme] = [self.scope, function_lexeme_address[1:], return_type, self.i, return_address,
                                         return_val, no_args, []]
             self.scope = 1
             self.ss.append(function_lexeme)
+
         elif action == '#scope_out':
             print('----------------------------------')
             for k, v in list(self.st.items()):
@@ -154,6 +157,8 @@ class Codegen:
                 if v[0] == self.scope:
                     del self.st[k]
             self.scope = 0
+            self.fst.pop()
+
         elif action == '#param_first':
             address = self.ss.pop()
             function_lexeme = self.ss[-1]
@@ -205,7 +210,7 @@ class Codegen:
             func_name = self.ss.pop()
             if func_name == 'output':
                 return
-            # scope, add, iadd, type, start of  func, return add, return val, no.arg, params
+            # scope, add, type, start of  func, return add, return val, no.arg, params
 
             # assign return address
             self.add_and_increment_pb(generate_3address_code('ASSIGN', str(self.i + 2), self.st[func_name][-4]))
@@ -214,8 +219,12 @@ class Codegen:
             if self.st[func_name][2] == 'int':
                 self.ss.append(self.st[func_name][-3])
         elif action == "#pop_return":
-            self.ss.pop()
-            self.add_and_increment_pb('return must happen here')
+            val = self.ss.pop()
+            ra, rv = self.fst[-1]
+            self.add_and_increment_pb(generate_3address_code('ASSIGN', val, rv))
+            t = self.gettemp()
+            self.add_and_increment_pb(generate_3address_code('ASSIGN', '#'+str(ra), t))
+            self.add_and_increment_pb(generate_3address_code('JP', '@'+str(t)))
         else:
             print("ridiiiiiiii")
 
