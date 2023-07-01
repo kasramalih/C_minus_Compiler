@@ -3,18 +3,24 @@ class Codegen:
         self.ss = []
         self.break_s = []
         self.pb = []
-        self.pb.append('')
-        self.i = 1
+        self.i = 0
         self.st = {}
         self.current_available_address = 3000
         self.current_indirect_address = 500
+        self.stack_pointer = '5000'
+        self.add_and_increment_pb(generate_3address_code('ASSIGN', '#10000', self.stack_pointer))
+        self.add_and_increment_pb(generate_3address_code('ASSIGN', '#0', '0'))
         self.semantic_errors = []
         self.scope = 0
         # scope, add, iadd, type, start of  func, return add, return val, no.arg, params
         self.st['output'] = [0, self.current_available_address - 8, self.current_indirect_address - 4, 'void', None,
                              None, None, 1, [['int', 504]]]
+        self.st['main'] = [0, self.current_available_address - 16, self.current_indirect_address - 12, 'void', 0,
+                           0, 0, 0, [['int', 504]]]
         self.iter_s = []
         self.fst = []
+        self.globals_finish_i = 0
+        self.globals_done = False
 
     def code_gen(self, action, lexeme, line_no):
         """
@@ -135,17 +141,26 @@ class Codegen:
             self.ss.pop()
             self.ss.pop()
         elif action == '#scope_in':
+            if not self.globals_done:
+                self.globals_done = True
+                self.globals_finish_i = self.i
+                self.pb.append('')
+                self.i += 1
             function_lexeme_address = self.ss.pop()
             function_lexeme = self.ss.pop()
             if function_lexeme == "main":
-                self.pb[0] = generate_3address_code('JP', str(self.i))
+                self.pb[self.globals_finish_i] = generate_3address_code('JP', str(self.i))
             return_type = self.ss.pop()
             no_args = 0
-            return_address = self.gettemp()
-            return_val = self.gettemp()
-            self.fst.append((return_address, return_val))
-            self.st[function_lexeme] = [self.scope, function_lexeme_address[1:], return_type, self.i, return_address,
-                                        return_val, no_args, []]
+            if function_lexeme != 'main':
+                return_address = self.gettemp()
+                return_val = self.gettemp()
+                self.fst.append((return_address, return_val))
+                self.st[function_lexeme] = [self.scope, function_lexeme_address[1:], return_type, self.i,
+                                            return_address,
+                                            return_val, no_args, []]
+            else:
+                self.fst.append((0, 0))
             self.scope = 1
             self.ss.append(function_lexeme)
 
@@ -157,8 +172,9 @@ class Codegen:
                 if v[0] == self.scope:
                     del self.st[k]
             self.scope = 0
-            self.fst.pop()
-
+            ra, rv = self.fst.pop()
+            if self.ss[-1] != 'main':
+                self.add_and_increment_pb(generate_3address_code('JP', '@' + str(ra)))
         elif action == '#param_first':
             address = self.ss.pop()
             function_lexeme = self.ss[-1]
@@ -185,10 +201,31 @@ class Codegen:
             self.st[function_lexeme][-1][-1][0] = 'array'
         elif action == '#init_arg_check':
             func_addr = self.ss.pop()
+            func_name = ''
             for k in self.st.keys():
                 if str(self.st[k][1]) == str(func_addr[1:]):
+                    func_name = k
                     self.ss.append(k)
             self.ss.append(0)
+            if func_name == 'output':
+                return
+            vars_cnt = 0
+            t = str(self.gettemp())
+            t_add = str(self.gettemp())
+            self.add_and_increment_pb(generate_3address_code('ASSIGN', '#0', t))
+            decrease_pointer = self.i
+            self.add_and_increment_pb('')
+            self.add_and_increment_pb('')
+            for k in self.st.keys():
+                if self.st[k][0] == 1:
+                    vars_cnt += 1
+                    self.add_and_increment_pb(generate_3address_code('PRINT', '#0'))
+                    self.add_and_increment_pb(generate_3address_code('ADD', t, str(self.stack_pointer), t_add))
+                    self.add_and_increment_pb(generate_3address_code('ASSIGN', '@' + str(self.st[k][1]), '@' + t_add))
+                    self.add_and_increment_pb(generate_3address_code('ADD', '#4', t, t))
+            self.pb[decrease_pointer] = generate_3address_code('MULT', '#4', '#' + str(vars_cnt), t_add)
+            self.pb[decrease_pointer + 1] = generate_3address_code('SUB', str(self.stack_pointer), t_add,
+                                                                   str(self.stack_pointer))
         elif action == "#count_arg":
             arg = self.ss.pop()  # TODO do sth in next phase
             cnt = self.ss.pop()
@@ -201,8 +238,9 @@ class Codegen:
                     self.add_and_increment_pb(
                         generate_3address_code('ASSIGN', arg[1:], self.st[func_name][-1][cnt - 1][1][1:]))
                 else:
-                    self.add_and_increment_pb(generate_3address_code('ASSIGN', '#' + self.st[func_name][-1][cnt - 1][2],
-                                                                     self.st[func_name][-1][cnt - 1][1]))
+                    self.add_and_increment_pb(
+                        generate_3address_code('ASSIGN', '#' + str(self.st[func_name][-1][cnt - 1][2]),
+                                               self.st[func_name][-1][cnt - 1][1][1:]))
                     self.add_and_increment_pb(generate_3address_code('ASSIGN', arg, self.st[func_name][-1][cnt - 1][1]))
             self.ss.append(cnt)
         elif action == "#check_count":
@@ -213,18 +251,25 @@ class Codegen:
             # scope, add, type, start of  func, return add, return val, no.arg, params
 
             # assign return address
-            self.add_and_increment_pb(generate_3address_code('ASSIGN', str(self.i + 2), self.st[func_name][-4]))
+            self.add_and_increment_pb(generate_3address_code('ASSIGN', '#' + str(self.i + 4), self.st[func_name][-4]))
+            self.add_and_increment_pb(
+                generate_3address_code('SUB', str(self.stack_pointer), '#4', str(self.stack_pointer)))
+            self.add_and_increment_pb(
+                generate_3address_code('ASSIGN', str(self.fst[-1][0]), '@' + str(self.stack_pointer)))
             # jump to start of function
             self.add_and_increment_pb(generate_3address_code('JP', self.st[func_name][3]))
+            self.retrieve_values()
             if self.st[func_name][2] == 'int':
-                self.ss.append(self.st[func_name][-3])
+                t_return = str(self.gettemp())
+                self.add_and_increment_pb(generate_3address_code('ASSIGN', self.st[func_name][-3], t_return))
+                self.add_and_increment_pb(generate_3address_code('PRINT', str(self.stack_pointer)))
+                self.add_and_increment_pb(generate_3address_code('PRINT', str(self.fst[-1][0])))
+                self.ss.append(t_return)
         elif action == "#pop_return":
             val = self.ss.pop()
             ra, rv = self.fst[-1]
             self.add_and_increment_pb(generate_3address_code('ASSIGN', val, rv))
-            t = self.gettemp()
-            self.add_and_increment_pb(generate_3address_code('ASSIGN', '#'+str(ra), t))
-            self.add_and_increment_pb(generate_3address_code('JP', '@'+str(t)))
+            self.add_and_increment_pb(generate_3address_code('JP', '@' + str(ra)))
         else:
             print("ridiiiiiiii")
 
@@ -262,6 +307,26 @@ class Codegen:
             self.semantic_errors.append(
                 f"#{line_no}: Semantic Error! Type mismatch in operands, Got array instead of int.")
         # 26: Semantic Error! Type mismatch in operands, Got array instead of int.
+
+    def retrieve_values(self):
+        t = self.gettemp()
+        t_add = self.gettemp()
+        vars_cnt = 1
+        self.add_and_increment_pb(
+            generate_3address_code('ASSIGN', '@' + str(self.stack_pointer), str(self.fst[-1][0])))
+        self.add_and_increment_pb(generate_3address_code('PRINT', str(self.stack_pointer)))
+        self.add_and_increment_pb(generate_3address_code('PRINT', str(self.fst[-1][0])))
+        self.add_and_increment_pb(generate_3address_code('ASSIGN', '#4', t))
+        for k in self.st.keys():
+            if self.st[k][0] == 1:
+                vars_cnt += 1
+                # 12 - 32 / / 34 - 49
+                self.add_and_increment_pb(generate_3address_code('ADD', t, str(self.stack_pointer), t_add))
+                self.add_and_increment_pb(generate_3address_code('ASSIGN', '@' + t_add, '@' + str(self.st[k][1])))
+                self.add_and_increment_pb(generate_3address_code('ADD', '#4', t, t))
+        self.add_and_increment_pb(generate_3address_code('MULT', '#4', '#' + str(vars_cnt), t))
+        self.add_and_increment_pb(generate_3address_code('ADD', str(self.stack_pointer), t,
+                                                         str(self.stack_pointer)))
 
 
 def generate_3address_code(op, operand1, operand2=' ', operand3=' '):
