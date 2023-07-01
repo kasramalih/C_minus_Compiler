@@ -142,11 +142,14 @@ class Codegen:
             no_args = 0
             return_address = self.gettemp()
             return_val = self.gettemp()
-            self.st[function_lexeme] = [self.scope, function_lexeme_address, return_type, self.i, return_address,
+            self.st[function_lexeme] = [self.scope, function_lexeme_address[1:], return_type, self.i, return_address,
                                         return_val, no_args, []]
             self.scope = 1
             self.ss.append(function_lexeme)
         elif action == '#scope_out':
+            print('----------------------------------')
+            for k, v in list(self.st.items()):
+                print(k, '\t:\t', v)
             for k, v in list(self.st.items()):
                 if v[0] == self.scope:
                     del self.st[k]
@@ -154,15 +157,24 @@ class Codegen:
         elif action == '#param_first':
             address = self.ss.pop()
             function_lexeme = self.ss[-1]
+            indir_address = None
             self.st[function_lexeme][-2] += 1
-            self.st[function_lexeme][-1].append(['int', address])
+            for k in self.st.keys():
+                if str(self.st[k][1]) == str(address[1:]):
+                    indir_address = self.st[k][2]
+            self.st[function_lexeme][-1].append(['int', address, str(indir_address)])
         elif action == '#param':
             param = self.ss.pop()
             param_lexeme = self.ss.pop()
             type = self.ss.pop()
             function_lexeme = self.ss[-1]
+            indir_address = None
             self.st[function_lexeme][-2] += 1
-            self.st[function_lexeme][-1].append([type, param])
+            for k in self.st.keys():
+                if str(self.st[k][1]) == str(param[1:]):
+                    indir_address = self.st[k][2]
+            self.st[function_lexeme][-2] += 1
+            self.st[function_lexeme][-1].append([type, param, indir_address])
         elif action == '#arr_param':
             function_lexeme = self.ss[-1]
             self.st[function_lexeme][-1][-1][0] = 'array'
@@ -179,23 +191,31 @@ class Codegen:
             cnt += 1
             if func_name == 'output':
                 self.add_and_increment_pb(generate_3address_code('PRINT', arg))
-            code = generate_3address_code('ASSIGN', arg[1:], self.st[func_name][-1][cnt - 1][1][1:])
-            self.add_and_increment_pb(code)
+            else:
+                if self.st[func_name][-1][cnt - 1][0] == 'array':
+                    self.add_and_increment_pb(
+                        generate_3address_code('ASSIGN', arg[1:], self.st[func_name][-1][cnt - 1][1][1:]))
+                else:
+                    self.add_and_increment_pb(generate_3address_code('ASSIGN', '#' + self.st[func_name][-1][cnt - 1][2],
+                                                                     self.st[func_name][-1][cnt - 1][1]))
+                    self.add_and_increment_pb(generate_3address_code('ASSIGN', arg, self.st[func_name][-1][cnt - 1][1]))
             self.ss.append(cnt)
         elif action == "#check_count":
             total = self.ss.pop()
             func_name = self.ss.pop()
-
+            if func_name == 'output':
+                return
             # scope, add, iadd, type, start of  func, return add, return val, no.arg, params
 
             # assign return address
             self.add_and_increment_pb(generate_3address_code('ASSIGN', str(self.i + 2), self.st[func_name][-4]))
             # jump to start of function
-            self.add_and_increment_pb(generate_3address_code('JP', self.st[func_name][4]))
-            if self.st[func_name][3] == 'int':
+            self.add_and_increment_pb(generate_3address_code('JP', self.st[func_name][3]))
+            if self.st[func_name][2] == 'int':
                 self.ss.append(self.st[func_name][-3])
         elif action == "#pop_return":
             self.ss.pop()
+            self.add_and_increment_pb('return must happen here')
         else:
             print("ridiiiiiiii")
 
