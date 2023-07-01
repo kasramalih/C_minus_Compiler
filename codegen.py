@@ -5,16 +5,34 @@ class Codegen:
         self.pb = ["(ASSIGN, #4, 0,   )", "(JP, 2,  ,   )"]
         self.i = 2
         self.st = {}
-        self.current_available_address = 508
+        self.current_available_address = 3000
+        self.current_indirect_address = 500
         self.semantic_errors = []
         self.scope = 0
-        self.st['output'] = [0, self.current_available_address - 8, 'void', None, 1, [['int', 504]]]
+        self.st['output'] = [0, self.current_available_address - 8, self.current_indirect_address - 4, 'void', None, 1, [['int', 504]]]
         self.iter_s = []
 
     def code_gen(self, action, lexeme, line_no):
+        """
+        phase 4:
+        1-  Jump to main function on beginning of program
+        2-  update all 3address codes to indirect memory addressing
+        3-  on function invocation:
+            a. In caller, save arguments into function params
+            b. In caller, save return address(unique for each function)
+            d. optional: In caller, save all symbols plus return address of previous environment to stack
+            (this is different from SS since it should appear in the final code)
+        4- on function return:
+            a. In callee, load return address
+            b. In callee, load return value(and probably push it into stack)
+            c. In callee, jump indirectly to return address
+            d. optional: In caller, load all symbols from stack
+        """
         if action == "#pid":
-            addr = str(self.findaddr(lexeme))
-            self.ss.append(addr)
+            addr, indirect_addr = self.findaddr(lexeme)
+            # assign #500, 3000
+            self.add_and_increment_pb(generate_3address_code('ASSIGN', '#' + str(indirect_addr), addr))
+            self.ss.append('@' + addr)
         elif action == "#assign_initial_var":
             self.add_and_increment_pb(generate_3address_code('ASSIGN', '#0', self.ss.pop()))
 
@@ -30,7 +48,7 @@ class Codegen:
             self.ss.append(t2)
             self.ss.append('#assign')
         elif action == "#pop_assign":
-            if self.ss[-1] == '#assign':
+            if self.ss and self.ss[-1] == '#assign':
                 self.ss.pop()
                 self.ss.pop()
         elif action == "#psymbol":
@@ -40,7 +58,6 @@ class Codegen:
             t2 = self.ss.pop()
             t3 = self.ss.pop()
             temp_addr = self.gettemp()
-            self.type_checker(t1, t3, line_no)
             if t2 == "+":
                 self.add_and_increment_pb(generate_3address_code('ADD', t3, t1, temp_addr))
             else:
@@ -49,24 +66,20 @@ class Codegen:
         elif action == "#mult":
             t1 = self.ss.pop()
             t2 = self.ss.pop()
-            self.type_checker(t1, t2, line_no)
             temp_addr = self.gettemp()
             self.add_and_increment_pb(generate_3address_code('MULT', t1, t2, temp_addr))
             self.ss.append(temp_addr)
         elif action == "#array":
             t1 = self.ss.pop()
-            for k in self.st.keys():
-                if str(self.st[k][1]) == str(t1):
-                    self.st[k].append('array')
             size = int(lexeme)
-            self.current_available_address += 4 * (size - 1)
+            self.current_indirect_address += 4 * (size - 1)
             self.add_and_increment_pb(generate_3address_code('ASSIGN', "#0", t1))
         elif action == "#index":
             idx = self.ss.pop()
             offset = self.ss.pop()
             temp_addr = self.gettemp()
             self.add_and_increment_pb(generate_3address_code('MULT', idx, '#4', temp_addr))
-            self.add_and_increment_pb(generate_3address_code('ADD', '#' + offset, temp_addr, temp_addr))
+            self.add_and_increment_pb(generate_3address_code('ADD', offset[1:], temp_addr, temp_addr))
             self.ss.append("@" + temp_addr)
         elif action == "#LT" or action == "#EQ":
             self.ss.append(action[1:])
@@ -74,7 +87,6 @@ class Codegen:
             second = self.ss.pop()
             op = self.ss.pop()
             first = self.ss.pop()
-            self.type_checker(first, second, line_no)
             temp_addr = self.gettemp()
             self.add_and_increment_pb(generate_3address_code(op, first, second, temp_addr))
             self.ss.append(temp_addr)
@@ -90,8 +102,6 @@ class Codegen:
                 self.pb[to_break] = generate_3address_code('JP', self.i)
             self.iter_s.pop()
         elif action == "#break":
-            if not self.iter_s:
-                self.semantic_errors.append(f"#{line_no}: Semantic Error! No 'repeat ... until' found for 'break'.")
             self.break_s.append(self.i)
             self.pb.append('')
             self.i += 1
@@ -114,18 +124,8 @@ class Codegen:
         elif action == '#void_check_name_save':
             self.ss.append(lexeme)
         elif action == '#void_check':
-            id = self.ss.pop()
-            type = self.ss.pop()
-            if type == 'void':
-                self.semantic_errors.append(f"#{line_no - 1}: Semantic Error! Illegal type of void for '{id}'.")
-        elif action == '#defined_check':  # checks for definition of variables only
-            if lexeme not in self.st.keys() and lexeme != 'output':
-                self.semantic_errors.append(f"#{line_no}: Semantic Error! '{lexeme}' is not defined.")
-                temp_addr = self.gettemp()
-                self.ss.append(temp_addr)
-            else:
-                addr = str(self.findaddr(lexeme))
-                self.ss.append(addr)
+            self.ss.pop()
+            self.ss.pop()
         elif action == '#scope_in':
             function_lexeme_address = self.ss.pop()
             function_lexeme = self.ss.pop()
@@ -139,7 +139,6 @@ class Codegen:
                 if v[0] == self.scope:
                     del self.st[k]
             self.scope = 0
-            # self.ss.pop()
         elif action == '#param_first':
             address = self.ss.pop()
             function_lexeme = self.ss[-1]
@@ -155,13 +154,10 @@ class Codegen:
         elif action == '#arr_param':
             function_lexeme = self.ss[-1]
             self.st[function_lexeme][-1][-1][0] = 'array'
-            for k in self.st.keys():
-                if str(self.st[k][1]) == str(self.st[function_lexeme][-1][-1][1]):
-                    self.st[k].append('array')
         elif action == '#init_arg_check':
             func_addr = self.ss.pop()
             for k in self.st.keys():
-                if str(self.st[k][1]) == str(func_addr):
+                if str(self.st[k][1]) == str(func_addr[1:]):
                     self.ss.append(k)
             self.ss.append(0)
         elif action == "#count_arg":
@@ -171,28 +167,15 @@ class Codegen:
             cnt += 1
             if func_name == 'output':
                 self.add_and_increment_pb(generate_3address_code('PRINT', arg))
-            arg_type = 'int'
-            for k in self.st.keys():
-                if str(self.st[k][1]) == str(arg):
-                    try:
-                        arg_type = self.st[k][2]
-                    except:
-                        arg_type = 'int'
             if cnt > self.st[func_name][-2]:
                 self.ss.append(cnt)
                 return
-            if self.st[func_name][-1][cnt - 1][0] != arg_type:
-                self.semantic_errors.append(
-                    f"#{line_no}: Semantic Error! Mismatch in type of argument {cnt} of '{func_name}'. Expected '{self.st[func_name][-1][cnt - 1][0]}' but got '{arg_type}' instead.")
             self.ss.append(cnt)
         elif action == "#check_count":
             total = self.ss.pop()
             func_name = self.ss.pop()
             if self.st[func_name][2] == 'int':
                 self.ss.append(self.gettemp())
-            if total != self.st[func_name][-2]:
-                self.semantic_errors.append(
-                    f"#{line_no}: Semantic Error! Mismatch in numbers of arguments of '{func_name}'.")
         elif action == "#pop_return":
             self.ss.pop()
         else:
@@ -200,9 +183,10 @@ class Codegen:
 
     def findaddr(self, inp):
         if inp not in self.st.keys():
-            self.st[inp] = [self.scope, self.current_available_address]
+            self.st[inp] = [self.scope, self.current_available_address, self.current_indirect_address]
             self.current_available_address += 4
-        return self.st[inp][1]
+            self.current_indirect_address += 4
+        return str(self.st[inp][1]), str(self.st[inp][2])
 
     def gettemp(self):
         addr = self.current_available_address
@@ -219,12 +203,12 @@ class Codegen:
         for k in self.st.keys():
             if str(self.st[k][1]) == str(address_op1):
                 try:
-                    type_op1 = self.st[k][2]
+                    type_op1 = self.st[k][3]
                 except:
                     type_op1 = 'int'
             if str(self.st[k][1]) == str(address_op2):
                 try:
-                    type_op2 = self.st[k][2]
+                    type_op2 = self.st[k][3]
                 except:
                     type_op2 = 'int'
         if type_op1 == 'array' or type_op2 == 'array':
