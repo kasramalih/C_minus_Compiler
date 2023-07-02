@@ -23,6 +23,9 @@ class Codegen:
         self.globals_done = False
 
     def code_gen(self, action, lexeme, line_no):
+        # TODO Test case 5: Add return action for voids.
+        # TODO Test case 8: ?????
+        # TODO Test case 12: ?????
         """
         phase 4:
         1-  Jump to main function on beginning of program - done
@@ -165,9 +168,9 @@ class Codegen:
             self.ss.append(function_lexeme)
 
         elif action == '#scope_out':
-            print('----------------------------------')
-            for k, v in list(self.st.items()):
-                print(k, '\t:\t', v)
+            # print('----------------------------------')
+            # for k, v in list(self.st.items()):
+            #     print(k, '\t:\t', v)
             for k, v in list(self.st.items()):
                 if v[0] == self.scope:
                     del self.st[k]
@@ -200,8 +203,15 @@ class Codegen:
             function_lexeme = self.ss[-1]
             self.st[function_lexeme][-1][-1][0] = 'array'
         elif action == '#init_arg_check':
+            # self.add_and_increment_pb(generate_3address_code('PRINT', '#5555555'))
             func_addr = self.ss.pop()
             func_name = ''
+            top = self.ss[-1]
+            top_1 = ''
+            try:
+                top_1 = self.ss[-2]
+            except IndexError:
+                pass
             for k in self.st.keys():
                 if str(self.st[k][1]) == str(func_addr[1:]):
                     func_name = k
@@ -209,23 +219,41 @@ class Codegen:
             self.ss.append(0)
             if func_name == 'output':
                 return
-            vars_cnt = 0
+            vars_cnt = 2
             t = str(self.gettemp())
             t_add = str(self.gettemp())
-            self.add_and_increment_pb(generate_3address_code('ASSIGN', '#0', t))
+            self.add_and_increment_pb(generate_3address_code('ASSIGN', '#8', t))
             decrease_pointer = self.i
             self.add_and_increment_pb('')
             self.add_and_increment_pb('')
+            t_temp = self.gettemp()
+            self.add_and_increment_pb(generate_3address_code('ADD', '#4', self.stack_pointer, t_temp))
+            t_temp_temp = self.gettemp()
+            self.add_and_increment_pb(generate_3address_code('ASSIGN', '#0', t_temp_temp))
+            self.add_and_increment_pb(
+                generate_3address_code('ASSIGN', top_1 if top == '+' else t_temp_temp,
+                                       '@' + t_temp))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', '#888888'))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', '#' + str(top_1 if top == '+' else t_temp_temp)))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', t_temp))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', '@' + t_temp))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', '#88888'))
             for k in self.st.keys():
                 if self.st[k][0] == 1:
                     vars_cnt += 1
-                    self.add_and_increment_pb(generate_3address_code('PRINT', '#0'))
+                    # self.add_and_increment_pb(generate_3address_code('PRINT', '#33333333'))
                     self.add_and_increment_pb(generate_3address_code('ADD', t, str(self.stack_pointer), t_add))
                     self.add_and_increment_pb(generate_3address_code('ASSIGN', '@' + str(self.st[k][1]), '@' + t_add))
+                    # self.add_and_increment_pb(generate_3address_code('PRINT', str(self.st[k][1])))
+                    # self.add_and_increment_pb(generate_3address_code('PRINT', '@' + t_add))
+                    # self.add_and_increment_pb(generate_3address_code('PRINT', t_add))
                     self.add_and_increment_pb(generate_3address_code('ADD', '#4', t, t))
+                    # self.add_and_increment_pb(generate_3address_code('PRINT', '#33333333'))
             self.pb[decrease_pointer] = generate_3address_code('MULT', '#4', '#' + str(vars_cnt), t_add)
             self.pb[decrease_pointer + 1] = generate_3address_code('SUB', str(self.stack_pointer), t_add,
                                                                    str(self.stack_pointer))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', '#5555555'))
+
         elif action == "#count_arg":
             arg = self.ss.pop()  # TODO do sth in next phase
             cnt = self.ss.pop()
@@ -251,20 +279,26 @@ class Codegen:
             # scope, add, type, start of  func, return add, return val, no.arg, params
 
             # assign return address
-            self.add_and_increment_pb(generate_3address_code('ASSIGN', '#' + str(self.i + 4), self.st[func_name][-4]))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', '#444444444'))
             self.add_and_increment_pb(
-                generate_3address_code('SUB', str(self.stack_pointer), '#4', str(self.stack_pointer)))
-            self.add_and_increment_pb(
-                generate_3address_code('ASSIGN', str(self.fst[-1][0]), '@' + str(self.stack_pointer)))
+                generate_3address_code('ASSIGN', self.fst[-1][0], '@' + str(self.stack_pointer)))
+            self.add_and_increment_pb(generate_3address_code('ASSIGN', '#' + str(self.i + 2), self.st[func_name][-4]))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', '#444444444'))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', self.st[func_name][-4]))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', '@' + str(self.stack_pointer)))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', str(self.stack_pointer)))
+            # self.add_and_increment_pb(generate_3address_code('PRINT', '#444444444'))
+
             # jump to start of function
             self.add_and_increment_pb(generate_3address_code('JP', self.st[func_name][3]))
-            self.retrieve_values()
             if self.st[func_name][2] == 'int':
                 t_return = str(self.gettemp())
                 self.add_and_increment_pb(generate_3address_code('ASSIGN', self.st[func_name][-3], t_return))
-                self.add_and_increment_pb(generate_3address_code('PRINT', str(self.stack_pointer)))
-                self.add_and_increment_pb(generate_3address_code('PRINT', str(self.fst[-1][0])))
                 self.ss.append(t_return)
+                # self.add_and_increment_pb(generate_3address_code('PRINT', '#999999'))
+                # self.add_and_increment_pb(generate_3address_code('PRINT', '#' + str(self.st[func_name][-3])))
+                # self.add_and_increment_pb(generate_3address_code('PRINT', t_return))
+            self.retrieve_values()
         elif action == "#pop_return":
             val = self.ss.pop()
             ra, rv = self.fst[-1]
@@ -311,22 +345,46 @@ class Codegen:
     def retrieve_values(self):
         t = self.gettemp()
         t_add = self.gettemp()
-        vars_cnt = 1
+        vars_cnt = 2
+        # self.add_and_increment_pb(generate_3address_code('PRINT', '#1111111'))
         self.add_and_increment_pb(
             generate_3address_code('ASSIGN', '@' + str(self.stack_pointer), str(self.fst[-1][0])))
-        self.add_and_increment_pb(generate_3address_code('PRINT', str(self.stack_pointer)))
-        self.add_and_increment_pb(generate_3address_code('PRINT', str(self.fst[-1][0])))
-        self.add_and_increment_pb(generate_3address_code('ASSIGN', '#4', t))
+        # self.add_and_increment_pb(generate_3address_code('PRINT', str(self.stack_pointer)))
+        # self.add_and_increment_pb(generate_3address_code('PRINT', '@' + str(self.stack_pointer)))
+        # self.add_and_increment_pb(generate_3address_code('PRINT', '#' + str(self.fst[-1][0])))
+        # self.add_and_increment_pb(generate_3address_code('PRINT', '#2222222'))
+        t_temp = self.gettemp()
+        self.add_and_increment_pb(generate_3address_code('ADD', '#4', self.stack_pointer, t_temp))
+        tttttt = self.gettemp()
+        self.add_and_increment_pb(
+            generate_3address_code('ASSIGN', '@' + t_temp,
+                                   str(self.ss[-3]) if isinstance(self.ss[-1], int) or self.ss[-1].isnumeric() and
+                                                       self.ss[-2] == '+' else tttttt))
+        # self.add_and_increment_pb(generate_3address_code('PRINT', '#77777'))
+        # self.add_and_increment_pb(generate_3address_code('PRINT',
+        #                                                  '#' + self.ss[-3] if self.ss[-1].isnumeric() and self.ss[
+        #                                                      -2] == '+' else '#' + str(tttttt)))
+        # self.add_and_increment_pb(
+        #     generate_3address_code('PRINT', self.ss[-3] if self.ss[-1].isnumeric() and self.ss[-2] == '+' else tttttt))
+        # self.add_and_increment_pb(generate_3address_code('PRINT', t_temp))
+        # self.add_and_increment_pb(generate_3address_code('PRINT', '#77777'))
+
+        self.add_and_increment_pb(generate_3address_code('ASSIGN', '#8', t))
         for k in self.st.keys():
             if self.st[k][0] == 1:
                 vars_cnt += 1
-                # 12 - 32 / / 34 - 49
                 self.add_and_increment_pb(generate_3address_code('ADD', t, str(self.stack_pointer), t_add))
                 self.add_and_increment_pb(generate_3address_code('ASSIGN', '@' + t_add, '@' + str(self.st[k][1])))
+                # self.add_and_increment_pb(generate_3address_code('PRINT', t_add))
+                # self.add_and_increment_pb(generate_3address_code('PRINT', '@' + t_add))
+                # self.add_and_increment_pb(generate_3address_code('PRINT', '@' + str(self.st[k][1])))
+                # self.add_and_increment_pb(generate_3address_code('PRINT', str(self.st[k][1])))
+                # self.add_and_increment_pb(generate_3address_code('PRINT', '#222222222'))
                 self.add_and_increment_pb(generate_3address_code('ADD', '#4', t, t))
         self.add_and_increment_pb(generate_3address_code('MULT', '#4', '#' + str(vars_cnt), t))
         self.add_and_increment_pb(generate_3address_code('ADD', str(self.stack_pointer), t,
                                                          str(self.stack_pointer)))
+        # self.add_and_increment_pb(generate_3address_code('PRINT', '#1111111111'))
 
 
 def generate_3address_code(op, operand1, operand2=' ', operand3=' '):
