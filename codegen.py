@@ -69,7 +69,7 @@ class Codegen:
                 if self.ss[-1] == '#assign':
                     self.ss.pop()
                     self.ss.pop()
-                elif self.ss[-1][0] == '#':
+                elif isinstance(self.ss[-1], str) and self.ss[-1][0] == '#':
                     self.ss.pop()
         elif action == "#psymbol":
             self.ss.append(lexeme)
