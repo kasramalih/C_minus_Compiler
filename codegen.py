@@ -65,9 +65,12 @@ class Codegen:
             self.ss.append(t2)
             self.ss.append('#assign')
         elif action == "#pop_assign":
-            if self.ss and self.ss[-1] == '#assign':
-                self.ss.pop()
-                self.ss.pop()
+            if self.ss:
+                if self.ss[-1] == '#assign':
+                    self.ss.pop()
+                    self.ss.pop()
+                elif self.ss[-1][0] == '#':
+                    self.ss.pop()
         elif action == "#psymbol":
             self.ss.append(lexeme)
         elif action == "#addsub":
@@ -304,6 +307,10 @@ class Codegen:
             ra, rv = self.fst[-1]
             self.add_and_increment_pb(generate_3address_code('ASSIGN', val, rv))
             self.add_and_increment_pb(generate_3address_code('JP', '@' + str(ra)))
+        elif action == '#return':
+            ra, rv = self.fst[-1]
+            self.add_and_increment_pb(generate_3address_code('JP', '@' + str(ra)))
+
         else:
             print("ridiiiiiiii")
 

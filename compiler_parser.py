@@ -1,8 +1,8 @@
-from anytree import Node, RenderTree
-
-from codegen import Codegen
 from scanner import Scanner
+from codegen import Codegen
 from table_generator import Table
+from anytree import Node, RenderTree
+from anytree.exporter import UniqueDotExporter
 
 
 class Parser:
