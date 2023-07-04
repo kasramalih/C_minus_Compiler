@@ -1157,7 +1157,7 @@
     "Params": [
       [
         "int",
-        "#pid",
+        "#d_pid",
         "#param_first",
         "ID",
         "Param-prime",
